@@ -1,11 +1,27 @@
+import { useState } from 'react'
 import { useStore } from '../store'
 import { ColorIdentity } from './ColorPip'
+import { BootstrapModal } from './BootstrapModal'
 import styles from './LikedList.module.css'
 
 export function LikedList() {
   const likedCommanders = useStore(s => s.likedCommanders)
   const unlikeCommander = useStore(s => s.unlikeCommander)
+  const createDeck = useStore(s => s.createDeck)
   const setView = useStore(s => s.setView)
+  
+  const [selectedCommander, setSelectedCommander] = useState(null)
+
+  const handleBuildDeck = (commander) => {
+    setSelectedCommander(commander)
+  }
+  
+  const handleConfirmBuild = (cards) => {
+    if (selectedCommander) {
+      createDeck(selectedCommander, cards)
+    }
+    setSelectedCommander(null)
+  }
 
   if (likedCommanders.length === 0) {
     return (
@@ -41,6 +57,13 @@ export function LikedList() {
               <ColorIdentity colors={commander.colorIdentity} size="sm" />
             </div>
             <div className={styles.actions}>
+              <button
+                className={styles.buildBtn}
+                onClick={() => handleBuildDeck(commander)}
+                title="Build deck"
+              >
+                Build
+              </button>
               <a
                 href={commander.scryfallUri}
                 target="_blank"
@@ -62,7 +85,12 @@ export function LikedList() {
         ))}
       </div>
       
-      {/* Future: Build deck button will go here */}
+      <BootstrapModal
+        commander={selectedCommander}
+        isOpen={!!selectedCommander}
+        onClose={() => setSelectedCommander(null)}
+        onConfirm={handleConfirmBuild}
+      />
     </div>
   )
 }

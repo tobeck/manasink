@@ -6,6 +6,10 @@ export function Header() {
   const setView = useStore(s => s.setView)
   const setFilterModalOpen = useStore(s => s.setFilterModalOpen)
   const likedCount = useStore(s => s.likedCommanders.length)
+  const deckCount = useStore(s => s.decks.length)
+
+  // Don't show full nav in deckbuilder (it has its own back button)
+  if (view === 'deckbuilder') return null
 
   return (
     <header className={styles.header}>
@@ -24,6 +28,13 @@ export function Header() {
         >
           Liked
           {likedCount > 0 && <span className={styles.badge}>{likedCount}</span>}
+        </button>
+        <button
+          className={`${styles.navBtn} ${view === 'decks' ? styles.active : ''}`}
+          onClick={() => setView('decks')}
+        >
+          Decks
+          {deckCount > 0 && <span className={styles.badge}>{deckCount}</span>}
         </button>
       </nav>
 

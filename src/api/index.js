@@ -232,7 +232,7 @@ export function savePreferences(preferences) {
 }
 
 // ============================================
-// Deck management (for future deck builder)
+// Deck management
 // ============================================
 
 /**
@@ -252,6 +252,97 @@ export function getDecks() {
  */
 export function saveDecks(decks) {
   localStorage.setItem(STORAGE_KEYS.DECKS, JSON.stringify(decks))
+}
+
+// ============================================
+// Deck bootstrap helpers
+// ============================================
+
+/**
+ * Get basic land distribution for a color identity
+ */
+export function getBasicLandsForColors(colorIdentity) {
+  const landMap = {
+    W: { name: 'Plains', id: 'plains' },
+    U: { name: 'Island', id: 'island' },
+    B: { name: 'Swamp', id: 'swamp' },
+    R: { name: 'Mountain', id: 'mountain' },
+    G: { name: 'Forest', id: 'forest' },
+  }
+  
+  const colors = colorIdentity.filter(c => landMap[c])
+  
+  if (colors.length === 0) {
+    // Colorless commander
+    return [{ name: 'Wastes', count: 35 }]
+  }
+  
+  // ~35 basic lands distributed evenly
+  const totalLands = 35
+  const landsPerColor = Math.floor(totalLands / colors.length)
+  const extraLands = totalLands % colors.length
+  
+  return colors.map((color, i) => ({
+    ...landMap[color],
+    count: landsPerColor + (i < extraLands ? 1 : 0),
+  }))
+}
+
+/**
+ * Commander staples that fit in any deck
+ */
+export const COLORLESS_STAPLES = [
+  'Sol Ring',
+  'Arcane Signet', 
+  'Command Tower',
+  'Thought Vessel',
+  'Mind Stone',
+  'Lightning Greaves',
+  'Swiftfoot Boots',
+]
+
+/**
+ * Color-specific staples
+ */
+export const COLOR_STAPLES = {
+  W: ['Swords to Plowshares', 'Path to Exile', 'Generous Gift', 'Wrath of God'],
+  U: ['Counterspell', 'Swan Song', 'Cyclonic Rift', 'Rhystic Study'],
+  B: ['Dark Ritual', 'Toxic Deluge', 'Phyrexian Arena', 'Vampiric Tutor'],
+  R: ['Chaos Warp', 'Blasphemous Act', 'Jeska\'s Will', 'Deflecting Swat'],
+  G: ['Beast Within', 'Nature\'s Lore', 'Cultivate', 'Heroic Intervention'],
+}
+
+/**
+ * Get staples that fit within a color identity
+ */
+export function getStaplesForColorIdentity(colorIdentity) {
+  const staples = [...COLORLESS_STAPLES]
+  
+  colorIdentity.forEach(color => {
+    if (COLOR_STAPLES[color]) {
+      staples.push(...COLOR_STAPLES[color])
+    }
+  })
+  
+  return staples
+}
+
+/**
+ * Fetch multiple cards by name for bootstrapping
+ */
+export async function fetchCardsByNames(names) {
+  const cards = []
+  
+  for (const name of names) {
+    try {
+      const card = await fetchCardByName(name)
+      cards.push(card)
+    } catch (e) {
+      console.warn(`Could not fetch: ${name}`, e)
+    }
+  }
+  
+  return cards
 }
 
 // ============================================
