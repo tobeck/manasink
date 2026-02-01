@@ -1,19 +1,27 @@
 import { useStore } from '../store'
+import { useAuth } from '../context/AuthContext'
+import { UserMenu } from './UserMenu'
 import styles from './Header.module.css'
 
 export function Header() {
   const view = useStore(s => s.view)
   const setView = useStore(s => s.setView)
   const setFilterModalOpen = useStore(s => s.setFilterModalOpen)
-  const likedCount = useStore(s => s.likedCommanders.length)
-  const deckCount = useStore(s => s.decks.length)
+  const likedCommanders = useStore(s => s.likedCommanders)
+  const decks = useStore(s => s.decks)
+  const { isAuthenticated } = useAuth()
 
-  // Don't show full nav in deckbuilder (it has its own back button)
-  if (view === 'deckbuilder') return null
+  // Hide nav when in deck builder
+  if (view === 'deckbuilder') {
+    return null
+  }
 
   return (
     <header className={styles.header}>
-      <h1 className={styles.logo}>Commander Swipe</h1>
+      <h1 className={styles.logo}>
+        Manasink
+        {isAuthenticated && <span className={styles.syncBadge}>synced</span>}
+      </h1>
       
       <nav className={styles.nav}>
         <button
@@ -27,26 +35,39 @@ export function Header() {
           onClick={() => setView('liked')}
         >
           Liked
-          {likedCount > 0 && <span className={styles.badge}>{likedCount}</span>}
+          {likedCommanders.length > 0 && (
+            <span className={styles.badge}>{likedCommanders.length}</span>
+          )}
         </button>
         <button
           className={`${styles.navBtn} ${view === 'decks' ? styles.active : ''}`}
           onClick={() => setView('decks')}
         >
           Decks
-          {deckCount > 0 && <span className={styles.badge}>{deckCount}</span>}
+          {decks.length > 0 && (
+            <span className={styles.badge}>{decks.length}</span>
+          )}
         </button>
       </nav>
 
-      {view === 'swipe' && (
-        <button 
+      <div className={styles.actions}>
+        <button
           className={styles.filterBtn}
           onClick={() => setFilterModalOpen(true)}
-          aria-label="Filter"
+          title="Color filters"
         >
-          ⚙️
+          <FilterIcon />
         </button>
-      )}
+        <UserMenu />
+      </div>
     </header>
+  )
+}
+
+function FilterIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
   )
 }
