@@ -1,50 +1,24 @@
 import { useState } from 'react'
-import { ColorIdentity } from './ColorPip'
-import { 
-  getBasicLandsForColors, 
-  getStaplesForColorIdentity,
-  fetchCardsByNames,
-} from '../api'
+import { useStore } from '../store'
 import styles from './BootstrapModal.module.css'
 
-export function BootstrapModal({ commander, isOpen, onClose, onConfirm }) {
-  const [includeLands, setIncludeLands] = useState(true)
-  const [includeStaples, setIncludeStaples] = useState(true)
-  const [isLoading, setIsLoading] = useState(false)
-  
-  if (!isOpen || !commander) return null
-  
-  const basicLands = getBasicLandsForColors(commander.colorIdentity)
-  const staples = getStaplesForColorIdentity(commander.colorIdentity)
-  
-  const handleConfirm = async () => {
-    setIsLoading(true)
+export function BootstrapModal({ commander, onClose }) {
+  const createDeck = useStore(s => s.createDeck)
+  const [isCreating, setIsCreating] = useState(false)
+  const [selectedOption, setSelectedOption] = useState('empty')
+
+  const handleCreate = async () => {
+    setIsCreating(true)
     
     try {
-      let cards = []
-      
-      if (includeStaples) {
-        const stapleCards = await fetchCardsByNames(staples)
-        cards = [...cards, ...stapleCards]
-      }
-      
-      // Note: Basic lands need special handling since we want multiples
-      // For now we'll just add staples, lands can be added via search
-      // TODO: Add land fetching with quantities
-      
-      onConfirm(cards)
-    } catch (e) {
-      console.error('Failed to fetch bootstrap cards:', e)
-      onConfirm([])
-    } finally {
-      setIsLoading(false)
+      await createDeck(commander, [])
+      onClose()
+    } catch (error) {
+      console.error('Failed to create deck:', error)
+      setIsCreating(false)
     }
   }
-  
-  const handleSkip = () => {
-    onConfirm([])
-  }
-  
+
   return (
     <>
       <div className={styles.backdrop} onClick={onClose} />
@@ -53,67 +27,51 @@ export function BootstrapModal({ commander, isOpen, onClose, onConfirm }) {
         
         <div className={styles.commander}>
           <img 
-            src={commander.image}
+            src={commander.image || commander.imageLarge} 
             alt={commander.name}
-            className={styles.commanderImg}
+            className={styles.commanderImage}
           />
-          <div>
-            <h2 className={styles.title}>Build Deck</h2>
-            <p className={styles.commanderName}>{commander.name}</p>
-            <ColorIdentity colors={commander.colorIdentity} size="sm" />
+          <div className={styles.commanderInfo}>
+            <h2 className={styles.commanderName}>{commander.name}</h2>
+            <p className={styles.commanderType}>{commander.typeLine}</p>
           </div>
         </div>
         
-        <p className={styles.description}>
-          Start with some staples? You can always edit later.
-        </p>
-        
         <div className={styles.options}>
-          <label className={styles.option}>
-            <input
-              type="checkbox"
-              checked={includeStaples}
-              onChange={(e) => setIncludeStaples(e.target.checked)}
-            />
-            <span className={styles.checkbox} />
-            <div>
-              <span className={styles.optionLabel}>Add staples</span>
-              <span className={styles.optionHint}>
-                Sol Ring, signets, removal ({staples.length} cards)
-              </span>
+          <button
+            className={`${styles.option} ${selectedOption === 'empty' ? styles.selected : ''}`}
+            onClick={() => setSelectedOption('empty')}
+          >
+            <span className={styles.optionIcon}>📝</span>
+            <div className={styles.optionText}>
+              <span className={styles.optionTitle}>Empty deck</span>
+              <span className={styles.optionDesc}>Start from scratch</span>
             </div>
-          </label>
+          </button>
           
-          <label className={styles.option}>
-            <input
-              type="checkbox"
-              checked={includeLands}
-              onChange={(e) => setIncludeLands(e.target.checked)}
-            />
-            <span className={styles.checkbox} />
-            <div>
-              <span className={styles.optionLabel}>Add basic lands</span>
-              <span className={styles.optionHint}>
-                {basicLands.map(l => `${l.count}× ${l.name}`).join(', ')}
-              </span>
+          <button
+            className={`${styles.option} ${selectedOption === 'staples' ? styles.selected : ''}`}
+            onClick={() => setSelectedOption('staples')}
+            disabled
+          >
+            <span className={styles.optionIcon}>⚡</span>
+            <div className={styles.optionText}>
+              <span className={styles.optionTitle}>With staples</span>
+              <span className={styles.optionDesc}>Coming soon</span>
             </div>
-          </label>
+          </button>
         </div>
         
         <div className={styles.actions}>
-          <button 
-            className={styles.skipBtn}
-            onClick={handleSkip}
-            disabled={isLoading}
-          >
-            Start Empty
+          <button className={styles.cancelBtn} onClick={onClose}>
+            Cancel
           </button>
           <button 
-            className={styles.confirmBtn}
-            onClick={handleConfirm}
-            disabled={isLoading}
+            className={styles.createBtn} 
+            onClick={handleCreate}
+            disabled={isCreating}
           >
-            {isLoading ? 'Loading...' : 'Create Deck'}
+            {isCreating ? 'Creating...' : 'Create Deck'}
           </button>
         </div>
       </div>
