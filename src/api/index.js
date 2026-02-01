@@ -1,16 +1,18 @@
 /**
  * API Layer
  * 
- * Currently uses Scryfall directly + localStorage.
- * To add a backend later:
- * 1. Create a backend client (e.g., src/api/backend.js)
- * 2. Update these functions to call your API
- * 3. Keep Scryfall calls for card data, use backend for user data
+ * Data operations for Manasink.
+ * Uses Supabase when configured, falls back to localStorage.
  */
+
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
+
+// ============================================
+// Scryfall API (card data)
+// ============================================
 
 const SCRYFALL_API = 'https://api.scryfall.com'
 
-// Rate limiting for Scryfall (they ask for 50-100ms between requests)
 let lastRequestTime = 0
 const MIN_REQUEST_INTERVAL = 100
 
@@ -19,26 +21,20 @@ async function rateLimitedFetch(url) {
   const timeSinceLastRequest = now - lastRequestTime
   
   if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-    await new Promise(resolve => 
-      setTimeout(resolve, MIN_REQUEST_INTERVAL - timeSinceLastRequest)
-    )
+    await new Promise(r => setTimeout(r, MIN_REQUEST_INTERVAL - timeSinceLastRequest))
   }
   
   lastRequestTime = Date.now()
   const response = await fetch(url)
   
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`)
+    throw new Error(`Scryfall API error: ${response.status}`)
   }
   
   return response.json()
 }
 
-/**
- * Transform Scryfall card response to our Commander type
- */
 export function transformCard(card) {
-  // Handle double-faced cards
   const imageUris = card.image_uris || card.card_faces?.[0]?.image_uris || {}
   
   return {
@@ -61,10 +57,7 @@ export function transformCard(card) {
   }
 }
 
-/**
- * Build Scryfall query for commanders
- */
-function buildCommanderQuery(colorFilters = [], excludedIds = []) {
+export async function fetchRandomCommander(colorFilters = []) {
   let query = 'is:commander game:paper'
   
   if (colorFilters.length > 0 && colorFilters.length < 6) {
@@ -78,27 +71,12 @@ function buildCommanderQuery(colorFilters = [], excludedIds = []) {
     }
   }
   
-  return query
-}
-
-// ============================================
-// Commander/Card fetching (Scryfall)
-// ============================================
-
-/**
- * Fetch a random commander matching filters
- */
-export async function fetchRandomCommander(colorFilters = []) {
-  const query = encodeURIComponent(buildCommanderQuery(colorFilters))
   const data = await rateLimitedFetch(
-    `${SCRYFALL_API}/cards/random?q=${query}`
+    `${SCRYFALL_API}/cards/random?q=${encodeURIComponent(query)}`
   )
   return transformCard(data)
 }
 
-/**
- * Search for cards (for deck building)
- */
 export async function searchCards(query, options = {}) {
   const params = new URLSearchParams({
     q: query,
@@ -106,14 +84,10 @@ export async function searchCards(query, options = {}) {
     dir: options.dir || 'desc',
   })
   
-  if (options.page) {
-    params.set('page', options.page)
-  }
+  if (options.page) params.set('page', options.page)
   
   try {
-    const data = await rateLimitedFetch(
-      `${SCRYFALL_API}/cards/search?${params}`
-    )
+    const data = await rateLimitedFetch(`${SCRYFALL_API}/cards/search?${params}`)
     return {
       cards: data.data.map(transformCard),
       hasMore: data.has_more,
@@ -127,9 +101,6 @@ export async function searchCards(query, options = {}) {
   }
 }
 
-/**
- * Fetch a specific card by name
- */
 export async function fetchCardByName(name) {
   const data = await rateLimitedFetch(
     `${SCRYFALL_API}/cards/named?exact=${encodeURIComponent(name)}`
@@ -137,130 +108,348 @@ export async function fetchCardByName(name) {
   return transformCard(data)
 }
 
+export async function fetchCardsByNames(names) {
+  const cards = []
+  for (const name of names) {
+    try {
+      cards.push(await fetchCardByName(name))
+    } catch (e) {
+      console.warn(`Could not fetch: ${name}`)
+    }
+  }
+  return cards
+}
+
 // ============================================
-// User data (localStorage for now, backend later)
+// localStorage helpers
 // ============================================
 
 const STORAGE_KEYS = {
-  LIKED_COMMANDERS: 'commander-swipe:liked',
-  SWIPE_HISTORY: 'commander-swipe:history',
-  PREFERENCES: 'commander-swipe:preferences',
-  DECKS: 'commander-swipe:decks',
+  LIKED: 'manasink:liked',
+  DECKS: 'manasink:decks',
+  HISTORY: 'manasink:history',
+  PREFERENCES: 'manasink:preferences',
 }
 
-/**
- * Get liked commanders
- * TODO: Replace with backend call
- */
-export function getLikedCommanders() {
+function getStorage(key, fallback) {
   try {
-    const data = localStorage.getItem(STORAGE_KEYS.LIKED_COMMANDERS)
-    return data ? JSON.parse(data) : []
+    const data = localStorage.getItem(key)
+    return data ? JSON.parse(data) : fallback
   } catch {
-    return []
+    return fallback
   }
 }
 
-/**
- * Save liked commanders
- * TODO: Replace with backend call
- */
-export function saveLikedCommanders(commanders) {
-  localStorage.setItem(
-    STORAGE_KEYS.LIKED_COMMANDERS, 
-    JSON.stringify(commanders)
+function setStorage(key, value) {
+  localStorage.setItem(key, JSON.stringify(value))
+}
+
+// ============================================
+// Auth (Supabase only)
+// ============================================
+
+export async function getCurrentUser() {
+  if (!isSupabaseConfigured()) return null
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+}
+
+export async function signInWithGoogle() {
+  if (!isSupabaseConfigured()) throw new Error('Auth not configured')
+  return supabase.auth.signInWithOAuth({ 
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  })
+}
+
+export async function signInWithGitHub() {
+  if (!isSupabaseConfigured()) throw new Error('Auth not configured')
+  return supabase.auth.signInWithOAuth({ 
+    provider: 'github',
+    options: { redirectTo: window.location.origin }
+  })
+}
+
+export async function signOut() {
+  if (!isSupabaseConfigured()) return
+  return supabase.auth.signOut()
+}
+
+export function onAuthStateChange(callback) {
+  if (!isSupabaseConfigured()) return () => {}
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    (event, session) => callback(session?.user || null)
   )
+  return () => subscription.unsubscribe()
 }
 
-/**
- * Record a swipe action (for ML training data later)
- * TODO: Send to backend for ML model training
- */
-export function recordSwipeAction(action) {
-  try {
-    const history = getSwipeHistory()
-    history.push(action)
-    // Keep last 1000 actions
-    const trimmed = history.slice(-1000)
-    localStorage.setItem(
-      STORAGE_KEYS.SWIPE_HISTORY,
-      JSON.stringify(trimmed)
-    )
-  } catch (e) {
-    console.warn('Failed to record swipe action:', e)
+// ============================================
+// Liked Commanders
+// ============================================
+
+export async function getLikedCommanders() {
+  if (isSupabaseConfigured()) {
+    const user = await getCurrentUser()
+    if (user) {
+      const { data, error } = await supabase
+        .from('liked_commanders')
+        .select('commander_data')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
+      return data.map(row => row.commander_data)
+    }
+  }
+  return getStorage(STORAGE_KEYS.LIKED, [])
+}
+
+export async function saveLikedCommanders(commanders) {
+  // localStorage fallback (used when not logged in)
+  setStorage(STORAGE_KEYS.LIKED, commanders)
+}
+
+export async function likeCommander(commander) {
+  if (isSupabaseConfigured()) {
+    const user = await getCurrentUser()
+    if (user) {
+      const { error } = await supabase
+        .from('liked_commanders')
+        .upsert({
+          user_id: user.id,
+          commander_id: commander.id,
+          commander_data: commander,
+        }, { onConflict: 'user_id,commander_id' })
+      
+      if (error) throw error
+      return
+    }
+  }
+  
+  // localStorage fallback
+  const liked = getStorage(STORAGE_KEYS.LIKED, [])
+  if (!liked.find(c => c.id === commander.id)) {
+    setStorage(STORAGE_KEYS.LIKED, [commander, ...liked])
   }
 }
 
-/**
- * Get swipe history (for ML features)
- */
+export async function unlikeCommander(commanderId) {
+  if (isSupabaseConfigured()) {
+    const user = await getCurrentUser()
+    if (user) {
+      const { error } = await supabase
+        .from('liked_commanders')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('commander_id', commanderId)
+      
+      if (error) throw error
+      return
+    }
+  }
+  
+  // localStorage fallback
+  const liked = getStorage(STORAGE_KEYS.LIKED, [])
+  setStorage(STORAGE_KEYS.LIKED, liked.filter(c => c.id !== commanderId))
+}
+
+// ============================================
+// Decks
+// ============================================
+
+export async function getDecks() {
+  if (isSupabaseConfigured()) {
+    const user = await getCurrentUser()
+    if (user) {
+      const { data, error } = await supabase
+        .from('decks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+      
+      if (error) throw error
+      return data.map(row => ({
+        id: row.id,
+        name: row.name,
+        commander: row.commander_data,
+        cards: row.cards,
+        createdAt: new Date(row.created_at).getTime(),
+        updatedAt: new Date(row.updated_at).getTime(),
+      }))
+    }
+  }
+  return getStorage(STORAGE_KEYS.DECKS, [])
+}
+
+export async function saveDecks(decks) {
+  setStorage(STORAGE_KEYS.DECKS, decks)
+}
+
+export async function createDeck(commander, cards = []) {
+  if (isSupabaseConfigured()) {
+    const user = await getCurrentUser()
+    if (user) {
+      const { data, error } = await supabase
+        .from('decks')
+        .insert({
+          user_id: user.id,
+          name: `${commander.name} Deck`,
+          commander_id: commander.id,
+          commander_data: commander,
+          cards,
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data.id
+    }
+  }
+  
+  // localStorage fallback
+  const decks = getStorage(STORAGE_KEYS.DECKS, [])
+  const newDeck = {
+    id: `deck-${Date.now()}`,
+    name: `${commander.name} Deck`,
+    commander,
+    cards,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  }
+  setStorage(STORAGE_KEYS.DECKS, [newDeck, ...decks])
+  return newDeck.id
+}
+
+export async function updateDeck(deckId, updates) {
+  if (isSupabaseConfigured()) {
+    const user = await getCurrentUser()
+    if (user) {
+      const dbUpdates = {}
+      if (updates.name) dbUpdates.name = updates.name
+      if (updates.cards) dbUpdates.cards = updates.cards
+      if (updates.commander) {
+        dbUpdates.commander_data = updates.commander
+        dbUpdates.commander_id = updates.commander.id
+      }
+      
+      const { error } = await supabase
+        .from('decks')
+        .update(dbUpdates)
+        .eq('id', deckId)
+        .eq('user_id', user.id)
+      
+      if (error) throw error
+      return
+    }
+  }
+  
+  // localStorage fallback
+  const decks = getStorage(STORAGE_KEYS.DECKS, [])
+  const updated = decks.map(d => 
+    d.id === deckId ? { ...d, ...updates, updatedAt: Date.now() } : d
+  )
+  setStorage(STORAGE_KEYS.DECKS, updated)
+}
+
+export async function deleteDeck(deckId) {
+  if (isSupabaseConfigured()) {
+    const user = await getCurrentUser()
+    if (user) {
+      const { error } = await supabase
+        .from('decks')
+        .delete()
+        .eq('id', deckId)
+        .eq('user_id', user.id)
+      
+      if (error) throw error
+      return
+    }
+  }
+  
+  // localStorage fallback
+  const decks = getStorage(STORAGE_KEYS.DECKS, [])
+  setStorage(STORAGE_KEYS.DECKS, decks.filter(d => d.id !== deckId))
+}
+
+// ============================================
+// Swipe History (for ML)
+// ============================================
+
+export async function recordSwipeAction(action) {
+  if (isSupabaseConfigured()) {
+    const user = await getCurrentUser()
+    if (user) {
+      await supabase
+        .from('swipe_history')
+        .insert({
+          user_id: user.id,
+          commander_id: action.commanderId,
+          action: action.action,
+          commander_data: action.commanderData || null,
+        })
+      return
+    }
+  }
+  
+  // localStorage fallback
+  const history = getStorage(STORAGE_KEYS.HISTORY, [])
+  history.push(action)
+  setStorage(STORAGE_KEYS.HISTORY, history.slice(-1000))
+}
+
 export function getSwipeHistory() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.SWIPE_HISTORY)
-    return data ? JSON.parse(data) : []
-  } catch {
-    return []
-  }
-}
-
-/**
- * Get user preferences
- */
-export function getPreferences() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.PREFERENCES)
-    return data ? JSON.parse(data) : {
-      colorFilters: ['W', 'U', 'B', 'R', 'G', 'C'],
-      excludedCommanders: [],
-    }
-  } catch {
-    return {
-      colorFilters: ['W', 'U', 'B', 'R', 'G', 'C'],
-      excludedCommanders: [],
-    }
-  }
-}
-
-/**
- * Save user preferences
- */
-export function savePreferences(preferences) {
-  localStorage.setItem(
-    STORAGE_KEYS.PREFERENCES,
-    JSON.stringify(preferences)
-  )
+  return getStorage(STORAGE_KEYS.HISTORY, [])
 }
 
 // ============================================
-// Deck management
+// Preferences
 // ============================================
 
-/**
- * Get all decks
- */
-export function getDecks() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.DECKS)
-    return data ? JSON.parse(data) : []
-  } catch {
-    return []
+export async function getPreferences() {
+  if (isSupabaseConfigured()) {
+    const user = await getCurrentUser()
+    if (user) {
+      const { data } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (data) {
+        return {
+          colorFilters: data.color_filters,
+          ...data.settings,
+        }
+      }
+    }
   }
+  return getStorage(STORAGE_KEYS.PREFERENCES, {
+    colorFilters: ['W', 'U', 'B', 'R', 'G', 'C'],
+  })
 }
 
-/**
- * Save decks
- */
-export function saveDecks(decks) {
-  localStorage.setItem(STORAGE_KEYS.DECKS, JSON.stringify(decks))
+export async function savePreferences(preferences) {
+  if (isSupabaseConfigured()) {
+    const user = await getCurrentUser()
+    if (user) {
+      const { colorFilters, ...settings } = preferences
+      await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: user.id,
+          color_filters: colorFilters,
+          settings,
+        }, { onConflict: 'user_id' })
+      return
+    }
+  }
+  setStorage(STORAGE_KEYS.PREFERENCES, preferences)
 }
 
 // ============================================
 // Deck bootstrap helpers
 // ============================================
 
-/**
- * Get basic land distribution for a color identity
- */
 export function getBasicLandsForColors(colorIdentity) {
   const landMap = {
     W: { name: 'Plains', id: 'plains' },
@@ -271,107 +460,35 @@ export function getBasicLandsForColors(colorIdentity) {
   }
   
   const colors = colorIdentity.filter(c => landMap[c])
+  if (colors.length === 0) return [{ name: 'Wastes', count: 35 }]
   
-  if (colors.length === 0) {
-    // Colorless commander
-    return [{ name: 'Wastes', count: 35 }]
-  }
-  
-  // ~35 basic lands distributed evenly
   const totalLands = 35
-  const landsPerColor = Math.floor(totalLands / colors.length)
-  const extraLands = totalLands % colors.length
+  const perColor = Math.floor(totalLands / colors.length)
+  const extra = totalLands % colors.length
   
   return colors.map((color, i) => ({
     ...landMap[color],
-    count: landsPerColor + (i < extraLands ? 1 : 0),
+    count: perColor + (i < extra ? 1 : 0),
   }))
 }
 
-/**
- * Commander staples that fit in any deck
- */
 export const COLORLESS_STAPLES = [
-  'Sol Ring',
-  'Arcane Signet', 
-  'Command Tower',
-  'Thought Vessel',
-  'Mind Stone',
-  'Lightning Greaves',
-  'Swiftfoot Boots',
+  'Sol Ring', 'Arcane Signet', 'Command Tower',
+  'Thought Vessel', 'Mind Stone', 'Lightning Greaves', 'Swiftfoot Boots',
 ]
 
-/**
- * Color-specific staples
- */
 export const COLOR_STAPLES = {
   W: ['Swords to Plowshares', 'Path to Exile', 'Generous Gift', 'Wrath of God'],
   U: ['Counterspell', 'Swan Song', 'Cyclonic Rift', 'Rhystic Study'],
   B: ['Dark Ritual', 'Toxic Deluge', 'Phyrexian Arena', 'Vampiric Tutor'],
-  R: ['Chaos Warp', 'Blasphemous Act', 'Jeska\'s Will', 'Deflecting Swat'],
-  G: ['Beast Within', 'Nature\'s Lore', 'Cultivate', 'Heroic Intervention'],
+  R: ['Chaos Warp', 'Blasphemous Act', "Jeska's Will", 'Deflecting Swat'],
+  G: ['Beast Within', "Nature's Lore", 'Cultivate', 'Heroic Intervention'],
 }
 
-/**
- * Get staples that fit within a color identity
- */
 export function getStaplesForColorIdentity(colorIdentity) {
   const staples = [...COLORLESS_STAPLES]
-  
   colorIdentity.forEach(color => {
-    if (COLOR_STAPLES[color]) {
-      staples.push(...COLOR_STAPLES[color])
-    }
+    if (COLOR_STAPLES[color]) staples.push(...COLOR_STAPLES[color])
   })
-  
   return staples
-}
-
-/**
- * Fetch multiple cards by name for bootstrapping
- */
-export async function fetchCardsByNames(names) {
-  const cards = []
-  
-  for (const name of names) {
-    try {
-      const card = await fetchCardByName(name)
-      cards.push(card)
-    } catch (e) {
-      console.warn(`Could not fetch: ${name}`, e)
-    }
-  }
-  
-  return cards
-}
-
-// ============================================
-// Future ML integration hooks
-// ============================================
-
-/**
- * Placeholder for ML-powered commander recommendations
- * TODO: Implement when backend ML service is ready
- * 
- * @param {string} userId 
- * @returns {Promise<Commander[]>}
- */
-export async function getRecommendedCommanders(userId) {
-  // Future: Call ML backend
-  // For now, return empty - we'll use random
-  console.log('ML recommendations not yet implemented')
-  return []
-}
-
-/**
- * Placeholder for deck feedback
- * TODO: Implement when backend ML service is ready
- * 
- * @param {string} deckId
- * @returns {Promise<DeckFeedback>}
- */
-export async function getDeckFeedback(deckId) {
-  // Future: Call ML backend for deck analysis
-  console.log('Deck feedback not yet implemented')
-  return null
 }
