@@ -1,6 +1,6 @@
-# Commander Swipe
+# manasink
 
-A Tinder-style MTG Commander discovery app. Swipe through legendary creatures to find your next commander!
+An MTG Commander discovery app. Swipe through legendary creatures to find your next commander!
 
 ## Quick Start
 
