@@ -194,6 +194,97 @@
   border-top: 1px solid var(--bg-elevated);
 }
 
+.importBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 200;
+}
+
+.importModal {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 500px;
+  margin: 0 auto;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 12px 24px calc(24px + var(--safe-area-bottom));
+  z-index: 201;
+}
+
+.importHandle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-elevated);
+  margin: 0 auto 20px;
+}
+
+.importTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.importDesc {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  margin-bottom: 16px;
+}
+
+.importTextarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 12px;
+  border: 1px solid var(--bg-elevated);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 0.8125rem;
+  resize: vertical;
+  margin-bottom: 16px;
+}
+
+.importTextarea::placeholder {
+  color: var(--text-muted);
+}
+
+.importActions {
+  display: flex;
+  gap: 12px;
+}
+
+.importCancelBtn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.importSubmitBtn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.importSubmitBtn:disabled {
+  opacity: 0.5;
+}
+
 .empty {
   display: flex;
   align-items: center;

@@ -1,8 +1,9 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { CardSearch } from '../components/CardSearch'
 import { ColorIdentity } from '../components/ColorPip'
 import { DeckStats } from '../components/DeckStats'
+import { fetchCardByName } from '../api'
 import styles from './DeckBuilder.module.css'
 
 export function DeckBuilder() {
@@ -11,6 +12,9 @@ export function DeckBuilder() {
   const removeCardFromDeck = useStore(s => s.removeCardFromDeck)
   const addNotification = useStore(s => s.addNotification)
   const statsRef = useRef(null)
+  const [showImport, setShowImport] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importing, setImporting] = useState(false)
 
   const stats = useMemo(() => {
     if (!deck) return null
@@ -113,6 +117,44 @@ export function DeckBuilder() {
     }
   }
 
+  const handleImport = async () => {
+    if (!importText.trim()) return
+    setImporting(true)
+
+    const lines = importText.split('\n')
+    let added = 0
+    let failed = []
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('//')) continue
+
+      // Match: optional quantity (with optional 'x'), then card name
+      const match = trimmed.match(/^(\d+)x?\s+(.+)$/)
+      const cardName = match ? match[2] : trimmed
+
+      try {
+        const card = await fetchCardByName(cardName)
+        const success = await addCardToDeck(deck.id, card)
+        if (success) added++
+        else failed.push(cardName)
+      } catch {
+        failed.push(cardName)
+      }
+    }
+
+    setImporting(false)
+    setShowImport(false)
+    setImportText('')
+
+    if (added > 0) {
+      addNotification('success', `Imported ${added} card${added !== 1 ? 's' : ''}`)
+    }
+    if (failed.length > 0) {
+      addNotification('error', `Failed: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? ` +${failed.length - 3} more` : ''}`)
+    }
+  }
+
   return (
     <div className={styles.container}>
       {/* Commander header */}
@@ -140,6 +182,12 @@ export function DeckBuilder() {
               onClick={handleExport}
             >
               Export
+            </button>
+            <button
+              className={styles.statsBtn}
+              onClick={() => setShowImport(true)}
+            >
+              Import
             </button>
           </div>
         </div>
@@ -214,6 +262,41 @@ export function DeckBuilder() {
           </div>
         )}
       </div>
+
+      {showImport && (
+        <>
+          <div className={styles.importBackdrop} onClick={() => !importing && setShowImport(false)} />
+          <div className={styles.importModal}>
+            <div className={styles.importHandle} />
+            <h3 className={styles.importTitle}>Import Decklist</h3>
+            <p className={styles.importDesc}>Paste a decklist (one card per line, e.g. "1 Sol Ring")</p>
+            <textarea
+              className={styles.importTextarea}
+              value={importText}
+              onChange={e => setImportText(e.target.value)}
+              placeholder={"// Commander\n1 Atraxa, Praetors' Voice\n\n// Deck\n1 Sol Ring\n1 Counterspell"}
+              rows={12}
+              disabled={importing}
+            />
+            <div className={styles.importActions}>
+              <button
+                className={styles.importCancelBtn}
+                onClick={() => { setShowImport(false); setImportText('') }}
+                disabled={importing}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.importSubmitBtn}
+                onClick={handleImport}
+                disabled={importing || !importText.trim()}
+              >
+                {importing ? 'Importing...' : 'Import'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
