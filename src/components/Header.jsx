@@ -20,7 +20,7 @@ export function Header() {
     )
   }
 
-  if (view === 'admin') {
+  if (view === 'admin' || view === 'about') {
     return (
       <header className={styles.header}>
         <button className={styles.backBtn} onClick={() => setView('swipe')}>
@@ -40,7 +40,12 @@ export function Header() {
         </span>
         {isAuthenticated && <span className={styles.syncDot} />}
       </h1>
-      <UserMenu />
+      <div className={styles.headerRight}>
+        <button className={styles.aboutLink} onClick={() => setView('about')}>
+          About
+        </button>
+        <UserMenu />
+      </div>
     </header>
   )
 }

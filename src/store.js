@@ -305,7 +305,7 @@ export const useStore = create((set, get) => ({
   // ============================================
   // UI state
   // ============================================
-  view: 'swipe', // 'swipe' | 'liked' | 'decks' | 'deckbuilder'
+  view: 'swipe', // 'swipe' | 'liked' | 'decks' | 'deckbuilder' | 'about'
   setView: (view) => set({ view }),
   
   filterModalOpen: false,

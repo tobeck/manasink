@@ -52,6 +52,28 @@
   50% { opacity: 0.5; }
 }
 
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aboutLink {
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.aboutLink:hover {
+  color: var(--text-secondary);
+}
+
 .backBtn {
   display: flex;
   align-items: center;

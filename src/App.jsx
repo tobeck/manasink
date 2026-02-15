@@ -8,6 +8,7 @@ import { LikedList } from './components/LikedList'
 import { DecksView } from './pages/DecksView'
 import { DeckBuilder } from './pages/DeckBuilder'
 import { AdminPage } from './pages/AdminPage'
+import { AboutPage } from './pages/AboutPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Toast } from './components/Toast'
 import styles from './App.module.css'
@@ -26,6 +27,17 @@ function AppContent() {
     }
   }, [user, authLoading, initialize, reset])
 
+  useEffect(() => {
+    const titles = {
+      swipe: 'manasink — Discover Commanders',
+      liked: 'manasink — Liked Commanders',
+      decks: 'manasink — My Decks',
+      deckbuilder: 'manasink — Deck Builder',
+      about: 'manasink — About',
+    }
+    document.title = titles[view] || 'manasink — MTG Commander Discovery'
+  }, [view])
+
   if (authLoading || isLoading) {
     return (
       <div className={styles.app}>
@@ -36,7 +48,7 @@ function AppContent() {
     )
   }
 
-  const showBottomNav = view !== 'deckbuilder' && view !== 'admin'
+  const showBottomNav = view !== 'deckbuilder' && view !== 'admin' && view !== 'about'
 
   return (
     <div className={styles.app}>
@@ -47,6 +59,7 @@ function AppContent() {
         {view === 'decks' && <DecksView />}
         {view === 'deckbuilder' && <DeckBuilder />}
         {view === 'admin' && <AdminPage />}
+        {view === 'about' && <AboutPage />}
       </main>
       {showBottomNav && <BottomNav />}
       <Toast />
