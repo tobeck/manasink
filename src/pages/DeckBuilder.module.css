@@ -171,6 +171,28 @@
   margin-top: 4px;
 }
 
+.statsBtn {
+  padding: 4px 10px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background var(--transition-fast);
+}
+
+.statsBtn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.statsSeparator {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--bg-elevated);
+}
+
 .empty {
   display: flex;
   align-items: center;

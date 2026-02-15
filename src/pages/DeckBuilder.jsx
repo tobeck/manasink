@@ -1,13 +1,15 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useStore } from '../store'
 import { CardSearch } from '../components/CardSearch'
 import { ColorIdentity } from '../components/ColorPip'
+import { DeckStats } from '../components/DeckStats'
 import styles from './DeckBuilder.module.css'
 
 export function DeckBuilder() {
   const deck = useStore(s => s.getActiveDeck())
   const addCardToDeck = useStore(s => s.addCardToDeck)
   const removeCardFromDeck = useStore(s => s.removeCardFromDeck)
+  const statsRef = useRef(null)
 
   const stats = useMemo(() => {
     if (!deck) return null
@@ -102,6 +104,14 @@ export function DeckBuilder() {
           <div className={styles.headerMeta}>
             <ColorIdentity colors={deck.commander?.colorIdentity} size="small" />
             <span className={styles.cardCount}>{stats?.total || 0}/99 cards</span>
+            {stats?.total > 0 && (
+              <button
+                className={styles.statsBtn}
+                onClick={() => statsRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                Stats
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -166,6 +176,12 @@ export function DeckBuilder() {
           <div className={styles.emptyList}>
             <p>No cards yet</p>
             <p className={styles.emptyHint}>Search above to add cards</p>
+          </div>
+        )}
+
+        {stats?.total > 0 && (
+          <div ref={statsRef} className={styles.statsSeparator}>
+            <DeckStats cards={deck.cards || []} commander={deck.commander} />
           </div>
         )}
       </div>
