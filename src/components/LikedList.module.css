@@ -59,38 +59,20 @@
 }
 
 .removeBtn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
+  flex: 1;
+  padding: 10px;
   border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  opacity: 0;
-  transition: opacity var(--transition-fast), background var(--transition-fast);
-}
-
-.card:hover .removeBtn {
-  opacity: 1;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .removeBtn:hover {
   background: var(--color-pass);
   color: #fff;
-}
-
-/* Desktop: always show remove button with subtle opacity */
-@media (min-width: 768px) {
-  .removeBtn {
-    opacity: 0.6;
-  }
-
-  .card:hover .removeBtn {
-    opacity: 1;
-  }
 }
 
 .info {

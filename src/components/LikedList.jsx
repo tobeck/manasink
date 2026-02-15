@@ -66,13 +66,6 @@ export function LikedList() {
                 className={styles.image}
                 loading="lazy"
               />
-              <button
-                className={styles.removeBtn}
-                onClick={() => unlikeCommander(commander.id)}
-                aria-label={`Remove ${commander.name}`}
-              >
-                ✕
-              </button>
             </div>
 
             <div className={styles.info}>
@@ -99,6 +92,13 @@ export function LikedList() {
                 onClick={() => toggleBuy(commander.id, commander.name)}
               >
                 Buy ▾
+              </button>
+              <button
+                className={styles.removeBtn}
+                onClick={() => unlikeCommander(commander.id)}
+                aria-label={`Remove ${commander.name}`}
+              >
+                Remove
               </button>
             </div>
 
