@@ -9,6 +9,7 @@ export function DeckBuilder() {
   const deck = useStore(s => s.getActiveDeck())
   const addCardToDeck = useStore(s => s.addCardToDeck)
   const removeCardFromDeck = useStore(s => s.removeCardFromDeck)
+  const addNotification = useStore(s => s.addNotification)
   const statsRef = useRef(null)
 
   const stats = useMemo(() => {
@@ -90,6 +91,28 @@ export function DeckBuilder() {
     removeCardFromDeck(deck.id, cardId)
   }
 
+  const handleExport = async () => {
+    const lines = []
+    if (deck.commander) {
+      lines.push('// Commander')
+      lines.push(`1 ${deck.commander.name}`)
+      lines.push('')
+    }
+    if (deck.cards?.length > 0) {
+      lines.push('// Deck')
+      deck.cards.forEach(card => {
+        lines.push(`1 ${card.name}`)
+      })
+    }
+    const text = lines.join('\n')
+    try {
+      await navigator.clipboard.writeText(text)
+      addNotification('success', 'Deck copied to clipboard')
+    } catch {
+      addNotification('error', 'Failed to copy to clipboard')
+    }
+  }
+
   return (
     <div className={styles.container}>
       {/* Commander header */}
@@ -112,6 +135,12 @@ export function DeckBuilder() {
                 Stats
               </button>
             )}
+            <button
+              className={styles.statsBtn}
+              onClick={handleExport}
+            >
+              Export
+            </button>
           </div>
         </div>
       </div>
