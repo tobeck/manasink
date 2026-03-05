@@ -38,6 +38,7 @@ No router - views managed via Zustand store state:
 - `decks` - Deck management
 - `deckbuilder` - Deck editing
 - `admin` - Admin stats dashboard
+- `about` - Static about/info page (AboutPage.jsx)
 
 ### Data Flow
 ```
@@ -73,3 +74,38 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`) deploys to Vercel:
 - PR pushes → preview deployment
 - Main branch pushes → production deployment
 - Requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` secrets
+
+## Coding Conventions
+
+### Component Structure
+- **Named exports** for all components and hooks (no default exports except `App.jsx`)
+- Colocate small helpers and sub-components in the same file
+- Import order: React/libraries → store/context → components → utils/constants → styles
+- Barrel exports via `src/components/index.js` and `src/hooks/index.js` — re-export new modules there
+- Accessibility: interactive elements need `aria-label`, use `sr-only` class for screen-reader text, `aria-live` for dynamic regions
+
+### State & Data
+- Optimistic updates with rollback + `addNotification` on error:
+  ```javascript
+  const old = get().data
+  set({ data: updated })
+  try { await apiCall() }
+  catch { set({ data: old }); get().addNotification('error', msg) }
+  ```
+- Use `useShallow` when selecting multiple keys from the Zustand store to prevent unnecessary re-renders
+- Constants live in `src/constants.js` — never hardcode magic values in components
+- All Scryfall HTTP calls go through `rateLimitedFetch()` (100ms queue in `src/api/index.js`)
+- Supabase/localStorage dual-path: check `isSupabaseConfigured()` + `getCurrentUser()`, fall back to `getStorage()`/`setStorage()`
+- Raw Scryfall card objects must pass through `transformCard()` before entering app state
+
+### Styling
+- CSS Modules with **camelCase** class names (`styles.cardImage`, not `styles['card-image']`)
+- Mobile-first breakpoints: `768px` (tablet), `1200px` (desktop)
+- Use design-token CSS variables defined in `src/styles/global.css` (e.g., `--color-primary`, `--spacing-md`)
+
+## Subagents
+
+| Agent | When to use |
+|-------|-------------|
+| `code-reviewer` | After completing a feature or fix — reviews changed files for pattern consistency |
+| `scryfall-helper` | Before implementing a Scryfall API feature — researches endpoints, query syntax, and existing code patterns |
