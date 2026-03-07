@@ -20,6 +20,7 @@ export const STORAGE_KEYS = {
 
 // Queue and preloading
 export const QUEUE_SIZE = 3
+export const SEEN_RESET_DAYS = 30
 
 // UI behavior
 export const HINTS_DISMISS_AFTER = 3

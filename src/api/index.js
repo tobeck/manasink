@@ -6,7 +6,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { SCRYFALL_API, MIN_REQUEST_INTERVAL, STORAGE_KEYS } from '../constants'
+import { SCRYFALL_API, MIN_REQUEST_INTERVAL, STORAGE_KEYS, QUEUE_SIZE } from '../constants'
 
 // ============================================
 // Scryfall API (card data)
@@ -65,24 +65,93 @@ export function transformCard(card) {
   }
 }
 
-export async function fetchRandomCommander(colorFilters = []) {
-  let query = 'is:commander game:paper'
-  
-  if (colorFilters.length > 0 && colorFilters.length < 6) {
+/**
+ * Transform a row from the commanders DB table into the app's card format.
+ * Matches the shape produced by transformCard() for Scryfall data.
+ */
+export function transformCommanderRow(row) {
+  return {
+    id: row.scryfall_id,
+    name: row.name,
+    image: row.image_small || '',
+    imageLarge: row.image_large || '',
+    imageArt: '',
+    colorIdentity: row.color_identity || [],
+    typeLine: row.type_line || '',
+    manaCost: row.mana_cost || '',
+    cmc: row.cmc || 0,
+    scryfallUri: row.scryfall_uri,
+    oracleText: row.oracle_text || '',
+    power: row.power,
+    toughness: row.toughness,
+    keywords: row.keywords || [],
+    rarity: row.rarity,
+    setName: '',
+    priceUsd: row.price_usd || null,
+    priceUsdFoil: null,
+    priceEur: row.price_eur || null,
+    purchaseUris: {},
+  }
+}
+
+/**
+ * Fetch random commanders from the Supabase commanders table.
+ * Falls back to Scryfall random endpoint if Supabase is not configured.
+ */
+export async function fetchRandomCommanders(colorFilters = [], count = QUEUE_SIZE) {
+  // Use Supabase RPC when available
+  if (isSupabaseConfigured()) {
+    // Build color filter: null means no filter (all colors)
     const colors = colorFilters.filter(c => c !== 'C')
     const includesColorless = colorFilters.includes('C')
-    
-    if (includesColorless && colors.length === 0) {
-      query += ' id=c'
-    } else if (colors.length > 0) {
-      query += ` id<=${colors.join('')}`
+    let colorFilter = null
+
+    if (colorFilters.length > 0 && colorFilters.length < 6) {
+      if (includesColorless && colors.length === 0) {
+        // Colorless only — empty array means no colors
+        colorFilter = []
+      } else if (colors.length > 0) {
+        colorFilter = colors
+      }
+    }
+
+    const { data, error } = await supabase.rpc('get_random_commanders', {
+      color_filter: colorFilter,
+      result_limit: count,
+    })
+
+    if (!error && data && data.length > 0) {
+      return data.map(transformCommanderRow)
+    }
+
+    if (error) {
+      console.error('Supabase RPC error, falling back to Scryfall:', error)
     }
   }
-  
-  const data = await rateLimitedFetch(
-    `${SCRYFALL_API}/cards/random?q=${encodeURIComponent(query)}`
-  )
-  return transformCard(data)
+
+  // Fallback: fetch individually from Scryfall
+  const results = []
+  for (let i = 0; i < count; i++) {
+    try {
+      let query = 'is:commander game:paper'
+      if (colorFilters.length > 0 && colorFilters.length < 6) {
+        const colors = colorFilters.filter(c => c !== 'C')
+        const includesColorless = colorFilters.includes('C')
+        if (includesColorless && colors.length === 0) {
+          query += ' id=c'
+        } else if (colors.length > 0) {
+          query += ` id<=${colors.join('')}`
+        }
+      }
+      const data = await rateLimitedFetch(
+        `${SCRYFALL_API}/cards/random?q=${encodeURIComponent(query)}`
+      )
+      results.push(transformCard(data))
+    } catch (e) {
+      console.error('Scryfall fallback fetch failed:', e)
+    }
+  }
+  return results
 }
 
 export async function searchCards(query, options = {}) {

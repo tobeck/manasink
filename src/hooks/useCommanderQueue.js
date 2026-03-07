@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { fetchRandomCommander } from '../api'
+import { fetchRandomCommanders } from '../api'
 import { QUEUE_SIZE } from '../constants'
 
 export function useCommanderQueue(colorFilters) {
@@ -14,15 +14,6 @@ export function useCommanderQueue(colorFilters) {
     filtersRef.current = colorFilters
   }, [colorFilters])
 
-  const fetchOne = useCallback(async () => {
-    try {
-      return await fetchRandomCommander(filtersRef.current)
-    } catch (e) {
-      console.error('Failed to fetch commander:', e)
-      return null
-    }
-  }, [])
-
   const fillQueue = useCallback(async () => {
     if (isFetching.current) return
     isFetching.current = true
@@ -31,22 +22,20 @@ export function useCommanderQueue(colorFilters) {
 
     try {
       const needed = QUEUE_SIZE - queue.length
-      const promises = Array(Math.max(needed, 1)).fill(null).map(fetchOne)
-      const results = await Promise.all(promises)
-      const valid = results.filter(Boolean)
-      
-      if (valid.length === 0) {
+      const commanders = await fetchRandomCommanders(filtersRef.current, Math.max(needed, 1))
+
+      if (commanders.length === 0) {
         throw new Error('Could not fetch commanders')
       }
-      
-      setQueue(prev => [...prev, ...valid].slice(0, QUEUE_SIZE))
+
+      setQueue(prev => [...prev, ...commanders].slice(0, QUEUE_SIZE))
     } catch (e) {
       setError(e.message)
     } finally {
       setIsLoading(false)
       isFetching.current = false
     }
-  }, [queue.length, fetchOne])
+  }, [queue.length])
 
   // Initial load
   useEffect(() => {
