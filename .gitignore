@@ -49,3 +49,8 @@ coverage/
 
 # Optional: Prettier cache
 .prettiercache
+
+# Supabase
+.supabase/
+supabase/.temp/
+supabase/.branches/
