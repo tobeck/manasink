@@ -33,8 +33,8 @@ npm run test:run  # Vitest single run
 ```
 src/
 ├── api/            # Data operations: Scryfall, Supabase, localStorage
-│   ├── index.js    # All API functions + rateLimitedFetch + transformCard
-│   └── storage.js  # localStorage helpers (getStorage/setStorage)
+│   ├── index.js    # Scryfall functions + rateLimitedFetch + transformCard + legacy dual-path CRUD
+│   └── storage.js  # Storage adapter pattern (LocalStorageAdapter / SupabaseAdapter + factory)
 ├── components/     # Reusable UI components (barrel: index.js)
 ├── context/        # AuthContext.jsx — OAuth + email OTP
 ├── hooks/          # Custom hooks (barrel: index.js)
@@ -69,12 +69,18 @@ No router — views managed via `view` state in Zustand store:
 BottomNav shows on `swipe`/`liked`/`decks`. Header shows back buttons for `deckbuilder`/`admin`/`about`.
 
 ### Key Components
+- **Header** — Top bar with title, back buttons, settings access
+- **BottomNav** — Tab navigation for swipe/liked/decks views
 - **SwipeCard** — Card display with swipe gesture + LoadingCard/ErrorCard variants
+- **ActionButtons** — Like/pass buttons for swipe view
 - **CardSearch** — Scryfall search with debounce + keyboard navigation
+- **LikedList** — Scrollable list of liked commanders with unlike action
 - **DeckList** — Grouped card list by type (Creature, Instant, Sorcery, etc.)
 - **DeckStats** — Mana curve, type breakdown, category analysis (ramp, draw, removal)
 - **BootstrapModal** — Deck creation options (starter deck generation)
 - **FilterModal** — Color identity filter (WUBRGC)
+- **ColorPip / ColorIdentity** — Mana color icons and identity display
+- **UserMenu** — User account dropdown (sign in/out, admin link)
 - **SignInPrompt** — Modal after N swipes prompting sign-in
 - **ErrorBoundary** — Error fallback with retry
 - **Toast** — Notification system (success, error, info)
@@ -110,10 +116,23 @@ The app records swipe actions for future ML training:
 
 ## Deployment
 
+### Frontend (Vercel)
 GitHub Actions workflow (`.github/workflows/deploy.yml`) deploys to Vercel:
 - PR pushes → preview deployment
 - Main branch pushes → production deployment
 - Requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` secrets
+
+### Database (Supabase)
+- `.github/workflows/db-deploy.yml` — Pushes migrations on main branch when `supabase/migrations/**` changes
+- `.github/workflows/db-validate.yml` — On PRs, starts local Supabase and runs `supabase db reset` to validate migrations
+- `scripts/sync_commanders.py` — Syncs Scryfall bulk data (~3K commanders) into `commanders` table. Requires `SUPABASE_URL` + `SUPABASE_SECRET_KEY` (service role key)
+
+### Migration Conventions
+- Files in `supabase/migrations/` with timestamp naming: `YYYYMMDDHHMMSS_description.sql`
+- Use `IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` for idempotency
+- Every user-scoped table needs RLS policies (SELECT/INSERT/UPDATE/DELETE scoped to `auth.uid() = user_id`)
+- Tables with `updated_at` need the `handle_updated_at()` trigger
+- All FKs to `auth.users(id)` use `ON DELETE CASCADE`
 
 ## Coding Conventions
 
@@ -138,7 +157,7 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`) deploys to Vercel:
 - Use `useShallow` when selecting multiple keys from the Zustand store to prevent unnecessary re-renders
 - Constants live in `src/constants.js` — never hardcode magic values in components
 - All Scryfall HTTP calls go through `rateLimitedFetch()` (100ms queue in `src/api/index.js`)
-- Supabase/localStorage dual-path: check `isSupabaseConfigured()` + `getCurrentUser()`, fall back to `getStorage()`/`setStorage()`
+- Supabase/localStorage dual-path via `src/api/storage.js`: `getStorageAdapter()` returns `SupabaseAdapter` or `LocalStorageAdapter`. Legacy inline checks (`isSupabaseConfigured()` + `getCurrentUser()`) still exist in `src/api/index.js` for Scryfall-related functions
 - Raw Scryfall card objects must pass through `transformCard()` before entering app state
 
 ### Styling
@@ -190,24 +209,28 @@ export function MyComponent() {
 ```
 Then add to `src/components/index.js`: `export { MyComponent } from './MyComponent'`
 
-### Adding an API Function (Supabase + localStorage)
+### Adding an API Function (Storage Adapter)
+For CRUD operations, add methods to both adapters in `src/api/storage.js`:
 ```javascript
-// In src/api/index.js
-export async function getThings() {
-  if (isSupabaseConfigured()) {
-    const user = await getCurrentUser()
-    if (user) {
-      const { data, error } = await supabase
-        .from('table_name')
-        .select('*')
-        .eq('user_id', user.id)
-      if (error) return getStorage(STORAGE_KEYS.THINGS, [])
-      return data
-    }
-  }
-  return getStorage(STORAGE_KEYS.THINGS, [])
+// In LocalStorageAdapter
+async getThings() {
+  return getFromLocalStorage(STORAGE_KEYS.THINGS, [])
+}
+
+// In SupabaseAdapter
+async getThings() {
+  const user = await this._ensureUser()
+  if (!user) return []
+  const { data, error } = await supabase
+    .from('table_name')
+    .select('*')
+    .eq('user_id', user.id)
+  if (error) throw error
+  return data
 }
 ```
+
+For Scryfall-related functions, add directly to `src/api/index.js` using the legacy inline pattern with `isSupabaseConfigured()` + `getCurrentUser()` checks.
 
 ### Adding a New View
 1. Create `src/pages/NewView.jsx` + `NewView.module.css`
@@ -232,6 +255,7 @@ These are the most common mistakes — check your work against this list:
 11. **CSS kebab-case** — Use `styles.cardImage` not `styles['card-image']`
 12. **Calling `initialize()` directly** — It has a reinit guard; `reset()` must be called first to clear state
 13. **StrictMode double-invocation** — Effects run twice in dev; side effects must be idempotent or use cleanup
+14. **Mixing storage patterns** — CRUD operations use the adapter in `src/api/storage.js`; Scryfall functions use inline checks in `src/api/index.js`. Don't mix the two approaches in the same function
 
 ## Testing
 
@@ -247,3 +271,4 @@ These are the most common mistakes — check your work against this list:
 |-------|-------------|
 | `code-reviewer` | After completing a feature or fix — reviews changed files for pattern consistency |
 | `scryfall-helper` | Before implementing a Scryfall API feature — researches endpoints, query syntax, and existing code patterns |
+| `supabase-helper` | Before implementing a database feature — researches schema, migrations, RLS policies, and RPC functions |
