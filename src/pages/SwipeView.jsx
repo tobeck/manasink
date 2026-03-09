@@ -26,11 +26,13 @@ export function SwipeView() {
   const { user } = useAuth()
 
   // Group store selectors to prevent unnecessary re-renders
-  const { colorFilters, likeCommander, passCommander } = useStore(
+  const { colorFilters, likeCommander, passCommander, undoLastPass, lastPassedCommander } = useStore(
     useShallow(s => ({
       colorFilters: s.preferences.colorFilters,
       likeCommander: s.likeCommander,
       passCommander: s.passCommander,
+      undoLastPass: s.undoLastPass,
+      lastPassedCommander: s.lastPassedCommander,
     }))
   )
   
@@ -38,6 +40,7 @@ export function SwipeView() {
     currentCommander,
     nextUpCommander,
     nextCommander,
+    prependCommander,
     resetQueue,
     isLoading: _isLoading,
     error,
@@ -81,6 +84,14 @@ export function SwipeView() {
   const handleLike = useCallback(() => handleSwipe('right'), [handleSwipe])
   const handlePass = useCallback(() => handleSwipe('left'), [handleSwipe])
 
+  const handleUndo = useCallback(() => {
+    if (isAnimating) return
+    const commander = undoLastPass()
+    if (commander) {
+      prependCommander(commander)
+    }
+  }, [isAnimating, undoLastPass, prependCommander])
+
   const handleDismissSignIn = () => {
     setShowSignInPrompt(false)
     localStorage.setItem(STORAGE_KEYS.SIGNIN_PROMPT_DISMISSED, 'true')
@@ -91,10 +102,11 @@ export function SwipeView() {
     const onKeyDown = (e) => {
       if (e.key === 'ArrowRight' || e.key === 'l') handleLike()
       if (e.key === 'ArrowLeft' || e.key === 'h') handlePass()
+      if (e.key === 'z') handleUndo()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [handleLike, handlePass])
+  }, [handleLike, handlePass, handleUndo])
 
   // Preload next image with cleanup and deduplication
   useEffect(() => {
@@ -150,11 +162,31 @@ export function SwipeView() {
         )}
       </div>
       
+      {lastPassedCommander && (
+        <button
+          className={styles.undoBtn}
+          onClick={handleUndo}
+          aria-label={`Undo pass on ${lastPassedCommander.name}`}
+        >
+          <UndoIcon />
+          <span className={styles.undoLabel}>Undo</span>
+        </button>
+      )}
+
       <FilterModal onApply={resetQueue} />
       
       {showSignInPrompt && (
         <SignInPrompt onClose={handleDismissSignIn} />
       )}
     </div>
+  )
+}
+
+function UndoIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="1 4 1 10 7 10" />
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+    </svg>
   )
 }

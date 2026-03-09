@@ -55,6 +55,10 @@ export function useCommanderQueue(colorFilters) {
     setQueue(prev => prev.slice(1))
   }, [])
 
+  const prependCommander = useCallback((commander) => {
+    setQueue(prev => [commander, ...prev])
+  }, [])
+
   const resetQueue = useCallback(() => {
     setQueue([])
     isFetching.current = false
@@ -65,6 +69,7 @@ export function useCommanderQueue(colorFilters) {
     currentCommander: queue[0] || null,
     nextUpCommander: queue[1] || null, // For preloading
     nextCommander,
+    prependCommander,
     resetQueue,
     isLoading: isLoading && queue.length === 0,
     error,

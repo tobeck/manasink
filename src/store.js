@@ -90,9 +90,9 @@ export const useStore = create((set, get) => ({
       return
     }
     
-    // Optimistic update
+    // Optimistic update + clear undo state
     const updated = [commander, ...(likedCommanders || [])]
-    set({ likedCommanders: updated })
+    set({ likedCommanders: updated, lastPassedCommander: null })
     
     try {
       await apiLikeCommander(commander)
@@ -129,7 +129,10 @@ export const useStore = create((set, get) => ({
     }
   },
   
+  lastPassedCommander: null,
+
   passCommander: async (commander) => {
+    set({ lastPassedCommander: commander })
     // Record for ML (we don't store passed commanders, just the action)
     try {
       await recordSwipeAction({
@@ -141,6 +144,13 @@ export const useStore = create((set, get) => ({
     } catch (error) {
       console.error('Failed to record pass:', error)
     }
+  },
+
+  undoLastPass: () => {
+    const { lastPassedCommander } = get()
+    if (!lastPassedCommander) return null
+    set({ lastPassedCommander: null })
+    return lastPassedCommander
   },
 
   // ============================================

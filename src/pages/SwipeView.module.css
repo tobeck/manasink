@@ -63,3 +63,43 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* Undo button */
+.undoBtn {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+  animation: undoFadeIn 0.2s ease;
+  z-index: 5;
+}
+
+.undoBtn:hover {
+  transform: scale(1.05);
+  color: var(--text-primary);
+}
+
+.undoBtn:active {
+  transform: scale(0.95);
+}
+
+@keyframes undoFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.undoLabel {
+  line-height: 1;
+}
