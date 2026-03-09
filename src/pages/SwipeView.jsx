@@ -26,16 +26,16 @@ export function SwipeView() {
   const { user } = useAuth()
 
   // Group store selectors to prevent unnecessary re-renders
-  const { colorFilters, likeCommander, passCommander, undoLastPass, lastPassedCommander } = useStore(
+  const { preferences, likeCommander, passCommander, undoLastPass, lastPassedCommander } = useStore(
     useShallow(s => ({
-      colorFilters: s.preferences.colorFilters,
+      preferences: s.preferences,
       likeCommander: s.likeCommander,
       passCommander: s.passCommander,
       undoLastPass: s.undoLastPass,
       lastPassedCommander: s.lastPassedCommander,
     }))
   )
-  
+
   const {
     currentCommander,
     nextUpCommander,
@@ -45,7 +45,7 @@ export function SwipeView() {
     isLoading: _isLoading,
     error,
     retry,
-  } = useCommanderQueue(colorFilters)
+  } = useCommanderQueue(preferences)
 
   const showHints = swipeCount < HINTS_DISMISS_AFTER
 

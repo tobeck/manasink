@@ -6,7 +6,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { SCRYFALL_API, MIN_REQUEST_INTERVAL, STORAGE_KEYS, QUEUE_SIZE, CATEGORY_SCRYFALL_QUERIES } from '../constants'
+import { SCRYFALL_API, MIN_REQUEST_INTERVAL, STORAGE_KEYS, QUEUE_SIZE, CATEGORY_SCRYFALL_QUERIES, CMC_MIN, CMC_MAX } from '../constants'
 
 // ============================================
 // Scryfall API (card data)
@@ -98,25 +98,77 @@ export function transformCommanderRow(row) {
  * Fetch random commanders from the Supabase commanders table.
  * Falls back to Scryfall random endpoint if Supabase is not configured.
  */
-export async function fetchRandomCommanders(colorFilters = [], count = QUEUE_SIZE) {
+/**
+ * Build color identity query fragments for Scryfall.
+ */
+function buildColorQuery(colorFilters) {
+  if (colorFilters.length === 0 || colorFilters.length >= 6) return ''
+  const colors = colorFilters.filter(c => c !== 'C')
+  const includesColorless = colorFilters.includes('C')
+  if (includesColorless && colors.length === 0) return ' id=c'
+  if (colors.length > 0) return ` id<=${colors.join('')}`
+  return ''
+}
+
+/**
+ * Build Scryfall query string from the full filters object.
+ */
+function buildScryfallQuery(filters = {}) {
+  const { colorFilters = [], cmcRange = [CMC_MIN, CMC_MAX], keywords = [], typeFilters = [] } = filters
+  let query = 'is:commander game:paper'
+
+  query += buildColorQuery(colorFilters)
+
+  // CMC range
+  if (cmcRange[0] > CMC_MIN) {
+    query += ` cmc>=${cmcRange[0]}`
+  }
+  if (cmcRange[1] < CMC_MAX) {
+    query += ` cmc<=${cmcRange[1]}`
+  }
+
+  // Keywords (AND — commander must have all selected keywords)
+  for (const kw of keywords) {
+    query += ` kw:"${kw}"`
+  }
+
+  // Type line (OR — commander can match any selected type)
+  if (typeFilters.length > 0) {
+    if (typeFilters.length === 1) {
+      query += ` t:${typeFilters[0]}`
+    } else {
+      query += ` (${typeFilters.map(t => `t:${t}`).join(' or ')})`
+    }
+  }
+
+  return query
+}
+
+/**
+ * Build color filter array for Supabase RPC.
+ */
+function buildSupabaseColorFilter(colorFilters) {
+  if (colorFilters.length === 0 || colorFilters.length >= 6) return null
+  const colors = colorFilters.filter(c => c !== 'C')
+  const includesColorless = colorFilters.includes('C')
+  if (includesColorless && colors.length === 0) return []
+  if (colors.length > 0) return colors
+  return null
+}
+
+export async function fetchRandomCommanders(filters = {}, count = QUEUE_SIZE) {
+  const { colorFilters = [], cmcRange = [CMC_MIN, CMC_MAX], keywords = [], typeFilters = [] } = filters
+
   // Use Supabase RPC when available
   if (isSupabaseConfigured()) {
-    // Build color filter: null means no filter (all colors)
-    const colors = colorFilters.filter(c => c !== 'C')
-    const includesColorless = colorFilters.includes('C')
-    let colorFilter = null
-
-    if (colorFilters.length > 0 && colorFilters.length < 6) {
-      if (includesColorless && colors.length === 0) {
-        // Colorless only — empty array means no colors
-        colorFilter = []
-      } else if (colors.length > 0) {
-        colorFilter = colors
-      }
-    }
+    const colorFilter = buildSupabaseColorFilter(colorFilters)
 
     const { data, error } = await supabase.rpc('get_random_commanders', {
       color_filter: colorFilter,
+      cmc_min: cmcRange[0] > CMC_MIN ? cmcRange[0] : null,
+      cmc_max: cmcRange[1] < CMC_MAX ? cmcRange[1] : null,
+      keyword_filter: keywords.length > 0 ? keywords.map(k => k.toLowerCase()) : null,
+      type_filter: typeFilters.length > 0 ? typeFilters.map(t => t.toLowerCase()) : null,
       result_limit: count,
     })
 
@@ -130,19 +182,10 @@ export async function fetchRandomCommanders(colorFilters = [], count = QUEUE_SIZ
   }
 
   // Fallback: fetch individually from Scryfall
+  const query = buildScryfallQuery(filters)
   const results = []
   for (let i = 0; i < count; i++) {
     try {
-      let query = 'is:commander game:paper'
-      if (colorFilters.length > 0 && colorFilters.length < 6) {
-        const colors = colorFilters.filter(c => c !== 'C')
-        const includesColorless = colorFilters.includes('C')
-        if (includesColorless && colors.length === 0) {
-          query += ' id=c'
-        } else if (colors.length > 0) {
-          query += ` id<=${colors.join('')}`
-        }
-      }
       const data = await rateLimitedFetch(
         `${SCRYFALL_API}/cards/random?q=${encodeURIComponent(query)}`
       )

@@ -11,6 +11,14 @@ import {
   updateDeck as apiUpdateDeck,
   deleteDeck as apiDeleteDeck,
 } from './api'
+import { CMC_MIN, CMC_MAX } from './constants'
+
+const DEFAULT_PREFERENCES = {
+  colorFilters: ['W', 'U', 'B', 'R', 'G', 'C'],
+  cmcRange: [CMC_MIN, CMC_MAX],
+  keywords: [],
+  typeFilters: [],
+}
 
 let notificationId = 0
 
@@ -54,7 +62,7 @@ export const useStore = create((set, get) => ({
       set({ 
         likedCommanders: likedCommanders || [],
         decks: decks || [],
-        preferences: preferences || { colorFilters: ['W', 'U', 'B', 'R', 'G', 'C'] },
+        preferences: { ...DEFAULT_PREFERENCES, ...preferences },
         isLoading: false,
         isInitialized: true,
       })
@@ -70,7 +78,7 @@ export const useStore = create((set, get) => ({
     set({
       likedCommanders: [],
       decks: [],
-      preferences: { colorFilters: ['W', 'U', 'B', 'R', 'G', 'C'] },
+      preferences: { ...DEFAULT_PREFERENCES },
       activeDeckId: null,
       isInitialized: false,
       isLoading: true,
@@ -156,7 +164,7 @@ export const useStore = create((set, get) => ({
   // ============================================
   // Filters & preferences
   // ============================================
-  preferences: { colorFilters: ['W', 'U', 'B', 'R', 'G', 'C'] },
+  preferences: { ...DEFAULT_PREFERENCES },
   
   setColorFilters: async (colorFilters) => {
     const preferences = { ...get().preferences, colorFilters }
@@ -178,6 +186,59 @@ export const useStore = create((set, get) => ({
     const updated = { ...preferences, colorFilters }
     set({ preferences: updated })
     
+    try {
+      await savePreferences(updated)
+    } catch (error) {
+      console.error('Failed to save preferences:', error)
+    }
+  },
+
+  setCmcRange: async (cmcRange) => {
+    const updated = { ...get().preferences, cmcRange }
+    set({ preferences: updated })
+    try {
+      await savePreferences(updated)
+    } catch (error) {
+      console.error('Failed to save preferences:', error)
+    }
+  },
+
+  toggleKeyword: async (keyword) => {
+    const { preferences } = get()
+    const keywords = preferences.keywords.includes(keyword)
+      ? preferences.keywords.filter(k => k !== keyword)
+      : [...preferences.keywords, keyword]
+    const updated = { ...preferences, keywords }
+    set({ preferences: updated })
+    try {
+      await savePreferences(updated)
+    } catch (error) {
+      console.error('Failed to save preferences:', error)
+    }
+  },
+
+  toggleTypeFilter: async (type) => {
+    const { preferences } = get()
+    const typeFilters = preferences.typeFilters.includes(type)
+      ? preferences.typeFilters.filter(t => t !== type)
+      : [...preferences.typeFilters, type]
+    const updated = { ...preferences, typeFilters }
+    set({ preferences: updated })
+    try {
+      await savePreferences(updated)
+    } catch (error) {
+      console.error('Failed to save preferences:', error)
+    }
+  },
+
+  clearAdvancedFilters: async () => {
+    const updated = {
+      ...get().preferences,
+      cmcRange: [CMC_MIN, CMC_MAX],
+      keywords: [],
+      typeFilters: [],
+    }
+    set({ preferences: updated })
     try {
       await savePreferences(updated)
     } catch (error) {

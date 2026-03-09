@@ -98,6 +98,51 @@ export const CATEGORY_META = {
 
 export const CATEGORY_ORDER = ['ramp', 'draw', 'removal', 'wipes', 'protection', 'interaction', 'creatures', 'lands']
 
+// Advanced filter options
+export const FILTER_KEYWORDS = [
+  'Flying',
+  'Lifelink',
+  'Deathtouch',
+  'Trample',
+  'Haste',
+  'Vigilance',
+  'First strike',
+  'Double strike',
+  'Hexproof',
+  'Indestructible',
+  'Menace',
+  'Reach',
+  'Flash',
+  'Ward',
+  'Partner',
+]
+
+export const FILTER_TYPES = [
+  'Human',
+  'Elf',
+  'Goblin',
+  'Dragon',
+  'Angel',
+  'Demon',
+  'Zombie',
+  'Merfolk',
+  'Vampire',
+  'Wizard',
+  'Warrior',
+  'Knight',
+  'Elemental',
+  'Beast',
+  'Spirit',
+  'Dinosaur',
+  'Cat',
+  'Artifact',
+  'God',
+  'Sliver',
+]
+
+export const CMC_MIN = 0
+export const CMC_MAX = 16
+
 // URL validation whitelist for external links
 export const ALLOWED_DOMAINS = [
   'scryfall.com',

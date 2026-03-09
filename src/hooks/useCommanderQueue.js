@@ -2,17 +2,17 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { fetchRandomCommanders } from '../api'
 import { QUEUE_SIZE } from '../constants'
 
-export function useCommanderQueue(colorFilters) {
+export function useCommanderQueue(filters) {
   const [queue, setQueue] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const isFetching = useRef(false)
-  const filtersRef = useRef(colorFilters)
+  const filtersRef = useRef(filters)
 
   // Keep filters ref in sync
   useEffect(() => {
-    filtersRef.current = colorFilters
-  }, [colorFilters])
+    filtersRef.current = filters
+  }, [filters])
 
   const fillQueue = useCallback(async () => {
     if (isFetching.current) return
