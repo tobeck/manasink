@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
+import { DEFAULT_CATEGORY_TARGETS } from '../constants'
 import styles from './DeckStats.module.css'
 
 // Keywords and patterns to identify card categories
-const CATEGORY_PATTERNS = {
+export const CATEGORY_PATTERNS = {
   ramp: {
     label: 'Ramp',
     icon: '💎',
@@ -109,7 +110,7 @@ const CATEGORY_PATTERNS = {
   },
 }
 
-function categorizeCard(card) {
+export function categorizeCard(card) {
   const categories = []
   const name = card.name?.toLowerCase() || ''
   const text = card.oracleText?.toLowerCase() || ''
@@ -252,9 +253,8 @@ export function DeckStats({ cards, commander }) {
         <div className={styles.categories}>
           {Object.entries(CATEGORY_PATTERNS).map(([key, config]) => {
             const count = stats.categories[key]?.length || 0
-            const isLow = (key === 'ramp' && count < 10) ||
-                         (key === 'draw' && count < 8) ||
-                         (key === 'removal' && count < 8)
+            const target = DEFAULT_CATEGORY_TARGETS[key] || 0
+            const isLow = target > 0 && count < target
             
             return (
               <div 
@@ -270,7 +270,7 @@ export function DeckStats({ cards, commander }) {
           })}
         </div>
         <p className={styles.hint}>
-          Aim for ~10 ramp, ~10 draw, ~10 removal
+          Aim for ~{DEFAULT_CATEGORY_TARGETS.ramp} ramp, ~{DEFAULT_CATEGORY_TARGETS.draw} draw, ~{DEFAULT_CATEGORY_TARGETS.removal} removal
         </p>
       </div>
     </div>

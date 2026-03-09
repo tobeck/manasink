@@ -6,7 +6,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { SCRYFALL_API, MIN_REQUEST_INTERVAL, STORAGE_KEYS, QUEUE_SIZE } from '../constants'
+import { SCRYFALL_API, MIN_REQUEST_INTERVAL, STORAGE_KEYS, QUEUE_SIZE, CATEGORY_SCRYFALL_QUERIES } from '../constants'
 
 // ============================================
 // Scryfall API (card data)
@@ -176,6 +176,20 @@ export async function searchCards(query, options = {}) {
     }
     throw error
   }
+}
+
+export async function searchCardsByCategory(categoryKey, colorIdentity, options = {}) {
+  const config = CATEGORY_SCRYFALL_QUERIES[categoryKey]
+  if (!config) throw new Error(`Unknown category: ${categoryKey}`)
+
+  const ci = colorIdentity.length === 0 ? 'c' : colorIdentity.join('').toLowerCase()
+  const query = config.query.replace('${CI}', ci)
+
+  return searchCards(query, {
+    order: options.order || 'edhrec',
+    dir: options.dir || 'desc',
+    page: options.page,
+  })
 }
 
 export async function fetchCardByName(name) {
@@ -370,6 +384,7 @@ export async function getDecks() {
         name: row.name,
         commander: row.commander_data,
         cards: row.cards,
+        categoryTargets: row.category_targets || null,
         createdAt: new Date(row.created_at).getTime(),
         updatedAt: new Date(row.updated_at).getTime(),
       }))
@@ -382,27 +397,30 @@ export async function saveDecks(decks) {
   setStorage(STORAGE_KEYS.DECKS, decks)
 }
 
-export async function createDeck(commander, cards = []) {
+export async function createDeck(commander, cards = [], categoryTargets = null) {
   if (isSupabaseConfigured()) {
     const user = await getCurrentUser()
     if (user) {
+      const insertData = {
+        user_id: user.id,
+        name: `${commander.name} Deck`,
+        commander_id: commander.id,
+        commander_data: commander,
+        cards,
+      }
+      if (categoryTargets) insertData.category_targets = categoryTargets
+
       const { data, error } = await supabase
         .from('decks')
-        .insert({
-          user_id: user.id,
-          name: `${commander.name} Deck`,
-          commander_id: commander.id,
-          commander_data: commander,
-          cards,
-        })
+        .insert(insertData)
         .select()
         .single()
-      
+
       if (error) throw error
       return data.id
     }
   }
-  
+
   // localStorage fallback
   const decks = getStorage(STORAGE_KEYS.DECKS, [])
   const newDeck = {
@@ -410,6 +428,7 @@ export async function createDeck(commander, cards = []) {
     name: `${commander.name} Deck`,
     commander,
     cards,
+    categoryTargets,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
@@ -428,13 +447,14 @@ export async function updateDeck(deckId, updates) {
         dbUpdates.commander_data = updates.commander
         dbUpdates.commander_id = updates.commander.id
       }
-      
+      if (updates.categoryTargets !== undefined) dbUpdates.category_targets = updates.categoryTargets
+
       const { error } = await supabase
         .from('decks')
         .update(dbUpdates)
         .eq('id', deckId)
         .eq('user_id', user.id)
-      
+
       if (error) throw error
       return
     }
@@ -588,4 +608,26 @@ export function getStaplesForColorIdentity(colorIdentity) {
     if (COLOR_STAPLES[color]) staples.push(...COLOR_STAPLES[color])
   })
   return staples
+}
+
+export async function fetchStapleCards(colorIdentity) {
+  // Fetch staple card objects
+  const stapleNames = getStaplesForColorIdentity(colorIdentity)
+  const staples = await fetchCardsByNames(stapleNames)
+
+  // Fetch basic land objects and duplicate per count
+  const landDistribution = getBasicLandsForColors(colorIdentity)
+  const lands = []
+  for (const { name, count } of landDistribution) {
+    try {
+      const landCard = await fetchCardByName(name)
+      for (let i = 0; i < count; i++) {
+        lands.push(landCard)
+      }
+    } catch (e) {
+      console.warn(`Could not fetch land: ${name}`)
+    }
+  }
+
+  return { staples, lands }
 }

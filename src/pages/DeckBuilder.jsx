@@ -1,20 +1,71 @@
 import { useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import { CardSearch } from '../components/CardSearch'
 import { ColorIdentity } from '../components/ColorPip'
 import { DeckStats } from '../components/DeckStats'
+import { CategoryTargets } from '../components/CategoryTargets'
+import { CategoryBrowser } from '../components/CategoryBrowser'
 import { fetchCardByName } from '../api'
 import styles from './DeckBuilder.module.css'
 
+function groupCardsByType(cards) {
+  const groups = {
+    Creature: [],
+    Instant: [],
+    Sorcery: [],
+    Artifact: [],
+    Enchantment: [],
+    Land: [],
+    Other: [],
+  }
+
+  // Group by type, then aggregate duplicates by id within each group
+  const byType = {}
+  cards.forEach(card => {
+    const type = card.typeLine || ''
+    let groupKey
+    if (type.includes('Creature')) groupKey = 'Creature'
+    else if (type.includes('Instant')) groupKey = 'Instant'
+    else if (type.includes('Sorcery')) groupKey = 'Sorcery'
+    else if (type.includes('Artifact')) groupKey = 'Artifact'
+    else if (type.includes('Enchantment')) groupKey = 'Enchantment'
+    else if (type.includes('Land')) groupKey = 'Land'
+    else groupKey = 'Other'
+
+    if (!byType[groupKey]) byType[groupKey] = {}
+    if (!byType[groupKey][card.id]) {
+      byType[groupKey][card.id] = { card, quantity: 0 }
+    }
+    byType[groupKey][card.id].quantity++
+  })
+
+  for (const [groupKey, cardMap] of Object.entries(byType)) {
+    groups[groupKey] = Object.values(cardMap)
+  }
+
+  return groups
+}
+
 export function DeckBuilder() {
   const deck = useStore(s => s.getActiveDeck())
-  const addCardToDeck = useStore(s => s.addCardToDeck)
-  const removeCardFromDeck = useStore(s => s.removeCardFromDeck)
-  const addNotification = useStore(s => s.addNotification)
+  const { addCardToDeck, removeOneCardFromDeck, removeCardFromDeck, addNotification, updateDeck } = useStore(
+    useShallow(s => ({
+      addCardToDeck: s.addCardToDeck,
+      removeOneCardFromDeck: s.removeOneCardFromDeck,
+      removeCardFromDeck: s.removeCardFromDeck,
+      addNotification: s.addNotification,
+      updateDeck: s.updateDeck,
+    }))
+  )
   const statsRef = useRef(null)
   const [showImport, setShowImport] = useState(false)
   const [importText, setImportText] = useState('')
   const [importing, setImporting] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const [statsCollapsed, setStatsCollapsed] = useState(false)
+  const [showCategories, setShowCategories] = useState(true)
+  const [browsingCategory, setBrowsingCategory] = useState(null)
 
   const stats = useMemo(() => {
     if (!deck) return null
@@ -47,33 +98,9 @@ export function DeckBuilder() {
     }
   }, [deck])
 
-  // Group cards by type - must be called before any early returns
   const groupedCards = useMemo(() => {
     if (!deck) return null
-
-    const cards = deck.cards || []
-    const groups = {
-      Creature: [],
-      Instant: [],
-      Sorcery: [],
-      Artifact: [],
-      Enchantment: [],
-      Land: [],
-      Other: [],
-    }
-
-    cards.forEach(card => {
-      const type = card.typeLine || ''
-      if (type.includes('Creature')) groups.Creature.push(card)
-      else if (type.includes('Instant')) groups.Instant.push(card)
-      else if (type.includes('Sorcery')) groups.Sorcery.push(card)
-      else if (type.includes('Artifact')) groups.Artifact.push(card)
-      else if (type.includes('Enchantment')) groups.Enchantment.push(card)
-      else if (type.includes('Land')) groups.Land.push(card)
-      else groups.Other.push(card)
-    })
-
-    return groups
+    return groupCardsByType(deck.cards || [])
   }, [deck])
 
   if (!deck) {
@@ -91,11 +118,20 @@ export function DeckBuilder() {
     }
   }
 
-  const handleRemoveCard = (cardId) => {
+  const handleRemoveOne = (cardId) => {
+    removeOneCardFromDeck(deck.id, cardId)
+  }
+
+  const handleRemoveAll = (cardId) => {
     removeCardFromDeck(deck.id, cardId)
   }
 
+  const handleAddDuplicate = async (card) => {
+    await addCardToDeck(deck.id, card)
+  }
+
   const handleExport = async () => {
+    setShowMenu(false)
     const lines = []
     if (deck.commander) {
       lines.push('// Commander')
@@ -104,8 +140,13 @@ export function DeckBuilder() {
     }
     if (deck.cards?.length > 0) {
       lines.push('// Deck')
+      // Aggregate by name for export
+      const counts = {}
       deck.cards.forEach(card => {
-        lines.push(`1 ${card.name}`)
+        counts[card.name] = (counts[card.name] || 0) + 1
+      })
+      Object.entries(counts).forEach(([name, count]) => {
+        lines.push(`${count} ${name}`)
       })
     }
     const text = lines.join('\n')
@@ -155,12 +196,22 @@ export function DeckBuilder() {
     }
   }
 
+  const handleTargetsChange = (newTargets) => {
+    updateDeck(deck.id, { categoryTargets: newTargets })
+  }
+
+  const handleCategoryTap = (categoryKey) => {
+    setBrowsingCategory(categoryKey)
+  }
+
+  const isBasicLand = (card) => card.typeLine?.toLowerCase().includes('basic land')
+
   return (
     <div className={styles.container}>
       {/* Commander header */}
       <div className={styles.header}>
-        <img 
-          src={deck.commander?.image || deck.commander?.imageLarge} 
+        <img
+          src={deck.commander?.image || deck.commander?.imageLarge}
           alt={deck.commander?.name}
           className={styles.commanderImage}
         />
@@ -169,79 +220,166 @@ export function DeckBuilder() {
           <div className={styles.headerMeta}>
             <ColorIdentity colors={deck.commander?.colorIdentity} size="small" />
             <span className={styles.cardCount}>{stats?.total || 0}/99 cards</span>
-            {stats?.total > 0 && (
+            <div className={styles.menuWrapper}>
               <button
-                className={styles.statsBtn}
-                onClick={() => statsRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                className={styles.menuBtn}
+                onClick={() => setShowMenu(!showMenu)}
+                aria-label="Deck options"
               >
-                Stats
+                <MoreIcon />
               </button>
-            )}
-            <button
-              className={styles.statsBtn}
-              onClick={handleExport}
-            >
-              Export
-            </button>
-            <button
-              className={styles.statsBtn}
-              onClick={() => setShowImport(true)}
-            >
-              Import
-            </button>
+              {showMenu && (
+                <>
+                  <div className={styles.menuBackdrop} onClick={() => setShowMenu(false)} />
+                  <div className={styles.menu}>
+                    {stats?.total > 0 && (
+                      <button
+                        className={styles.menuItem}
+                        onClick={() => {
+                          setShowMenu(false)
+                          statsRef.current?.scrollIntoView({ behavior: 'smooth' })
+                        }}
+                      >
+                        Stats
+                      </button>
+                    )}
+                    <button className={styles.menuItem} onClick={handleExport}>
+                      Export
+                    </button>
+                    <button
+                      className={styles.menuItem}
+                      onClick={() => {
+                        setShowMenu(false)
+                        setShowImport(true)
+                      }}
+                    >
+                      Import
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Search */}
       <div className={styles.search}>
-        <CardSearch 
+        <CardSearch
           onSelect={handleAddCard}
           placeholder="Add cards to deck..."
         />
       </div>
 
-      {/* Stats bar */}
+      {/* Sticky stats bar */}
       {stats && stats.total > 0 && (
-        <div className={styles.stats}>
-          <div className={styles.stat}>
-            <span className={styles.statValue}>${stats.totalPrice.toFixed(0)}</span>
-            <span className={styles.statLabel}>Total</span>
-          </div>
-          <div className={styles.stat}>
-            <span className={styles.statValue}>{stats.avgCmc.toFixed(1)}</span>
-            <span className={styles.statLabel}>Avg CMC</span>
-          </div>
-          <div className={styles.stat}>
-            <span className={styles.statValue}>{stats.creatures}</span>
-            <span className={styles.statLabel}>Creatures</span>
-          </div>
-          <div className={styles.stat}>
-            <span className={styles.statValue}>{stats.lands}</span>
-            <span className={styles.statLabel}>Lands</span>
-          </div>
+        <div className={styles.stickyStats}>
+          <button
+            className={styles.stickyStatsToggle}
+            onClick={() => setStatsCollapsed(!statsCollapsed)}
+            aria-label={statsCollapsed ? 'Expand stats' : 'Collapse stats'}
+          >
+            <div className={styles.stickyStatsRow}>
+              <span className={styles.stickyStatChip}>{stats.total}/99</span>
+              <span className={styles.stickyStatChip}>${stats.totalPrice.toFixed(0)}</span>
+              <span className={styles.stickyStatChip}>CMC {stats.avgCmc.toFixed(1)}</span>
+              <ChevronIcon className={statsCollapsed ? styles.chevronDown : styles.chevronUp} />
+            </div>
+          </button>
+          {!statsCollapsed && (
+            <div className={styles.stickyStatsExpanded}>
+              <div className={styles.stat}>
+                <span className={styles.statValue}>{stats.creatures}</span>
+                <span className={styles.statLabel}>Creatures</span>
+              </div>
+              <div className={styles.stat}>
+                <span className={styles.statValue}>{stats.instants}</span>
+                <span className={styles.statLabel}>Instants</span>
+              </div>
+              <div className={styles.stat}>
+                <span className={styles.statValue}>{stats.sorceries}</span>
+                <span className={styles.statLabel}>Sorceries</span>
+              </div>
+              <div className={styles.stat}>
+                <span className={styles.statValue}>{stats.artifacts}</span>
+                <span className={styles.statLabel}>Artifacts</span>
+              </div>
+              <div className={styles.stat}>
+                <span className={styles.statValue}>{stats.enchantments}</span>
+                <span className={styles.statLabel}>Enchant.</span>
+              </div>
+              <div className={styles.stat}>
+                <span className={styles.statValue}>{stats.lands}</span>
+                <span className={styles.statLabel}>Lands</span>
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Category targets toggle */}
+      <div className={styles.categoryToggle}>
+        <button
+          className={styles.categoryToggleBtn}
+          onClick={() => setShowCategories(!showCategories)}
+          aria-expanded={showCategories}
+          aria-label={showCategories ? 'Hide category targets' : 'Show category targets'}
+        >
+          {showCategories ? 'Hide categories' : 'Show categories'}
+        </button>
+      </div>
+
+      {/* Category targets */}
+      {showCategories && (
+        <CategoryTargets
+          deck={deck}
+          onCategoryTap={handleCategoryTap}
+          onTargetsChange={handleTargetsChange}
+        />
       )}
 
       {/* Card list */}
       <div className={styles.cardList}>
-        {Object.entries(groupedCards).map(([type, cards]) => 
-          cards.length > 0 && (
+        {Object.entries(groupedCards).map(([type, entries]) =>
+          entries.length > 0 && (
             <div key={type} className={styles.group}>
               <h3 className={styles.groupTitle}>
-                {type} ({cards.length})
+                {type} ({entries.reduce((sum, e) => sum + e.quantity, 0)})
               </h3>
               <div className={styles.groupCards}>
-                {cards.map(card => (
+                {entries.map(({ card, quantity }) => (
                   <div key={card.id} className={styles.card}>
+                    {quantity > 1 && (
+                      <span className={styles.quantityBadge}>{quantity}</span>
+                    )}
                     <span className={styles.cardName}>{card.name}</span>
                     <span className={styles.cardMana}>{card.manaCost?.replace(/[{}]/g, '')}</span>
-                    <button 
-                      className={styles.removeBtn}
-                      onClick={() => handleRemoveCard(card.id)}
-                    >
-                      ✕
-                    </button>
+                    {isBasicLand(card) ? (
+                      <div className={styles.quantityControls}>
+                        <button
+                          className={styles.quantityBtn}
+                          onClick={() => handleRemoveOne(card.id)}
+                          aria-label={`Remove one ${card.name}`}
+                        >
+                          -
+                        </button>
+                        <button
+                          className={styles.quantityBtn}
+                          onClick={() => handleAddDuplicate(card)}
+                          aria-label={`Add one ${card.name}`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className={styles.removeBtn}
+                        onClick={() => handleRemoveAll(card.id)}
+                        aria-label={`Remove ${card.name}`}
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -269,7 +407,7 @@ export function DeckBuilder() {
           <div className={styles.importModal}>
             <div className={styles.importHandle} />
             <h3 className={styles.importTitle}>Import Decklist</h3>
-            <p className={styles.importDesc}>Paste a decklist (one card per line, e.g. "1 Sol Ring")</p>
+            <p className={styles.importDesc}>Paste a decklist (one card per line, e.g. &quot;1 Sol Ring&quot;)</p>
             <textarea
               className={styles.importTextarea}
               value={importText}
@@ -297,6 +435,33 @@ export function DeckBuilder() {
           </div>
         </>
       )}
+
+      {browsingCategory && (
+        <CategoryBrowser
+          categoryKey={browsingCategory}
+          deck={deck}
+          onClose={() => setBrowsingCategory(null)}
+          onAdd={handleAddCard}
+        />
+      )}
     </div>
+  )
+}
+
+function MoreIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="5" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="12" cy="19" r="2" />
+    </svg>
+  )
+}
+
+function ChevronIcon({ className }) {
+  return (
+    <svg className={className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
   )
 }

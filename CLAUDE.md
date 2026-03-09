@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 manasink is an MTG Commander discovery app. Users swipe through legendary creatures to find their next commander, with features for deck building, filtering, and personalization.
 
+### Design Philosophy
+- **Mobile-first, phone-optimized.** Every feature must work well on a small screen. If it clutters the phone UI or requires desktop-sized layouts, it doesn't ship.
+- **The card image IS the information.** MTG cards contain all rules text, stats, and art. Don't duplicate what the card already shows — no separate "detail views" that restate card data.
+- **One card in frame, swipe to act.** The core interaction pattern: show a single card prominently, let the user decide (like/pass/add). Reuse this pattern in new features (e.g., category browsing in deck builder) rather than inventing new paradigms.
+- **Minimal chrome, maximum content.** Prioritize card imagery and swipe interactions over menus, sidebars, or info panels. Use sliders and taps over text input for mobile controls.
+- **See [ROADMAP.md](./ROADMAP.md)** for planned features and phases.
+
 ## Commands
 
 ```bash
@@ -269,6 +276,7 @@ These are the most common mistakes — check your work against this list:
 
 | Agent | When to use |
 |-------|-------------|
+| `feature-planner` | Before starting a roadmap feature — reads ROADMAP.md and codebase, produces step-by-step implementation plan |
 | `code-reviewer` | After completing a feature or fix — reviews changed files for pattern consistency |
 | `scryfall-helper` | Before implementing a Scryfall API feature — researches endpoints, query syntax, and existing code patterns |
 | `supabase-helper` | Before implementing a database feature — researches schema, migrations, RLS policies, and RPC functions |

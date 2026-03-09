@@ -181,15 +181,16 @@ export const useStore = create((set, get) => ({
   decks: [],
   activeDeckId: null,
   
-  createDeck: async (commander, cards = []) => {
+  createDeck: async (commander, cards = [], categoryTargets = null) => {
     const { decks } = get()
-    
+
     // Create temp deck for optimistic UI
     const tempDeck = {
       id: `temp-${Date.now()}`,
       name: `${commander.name} Deck`,
       commander,
       cards,
+      categoryTargets,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
@@ -201,7 +202,7 @@ export const useStore = create((set, get) => ({
     })
     
     try {
-      const newId = await apiCreateDeck(commander, cards)
+      const newId = await apiCreateDeck(commander, cards, categoryTargets)
       
       // Replace temp deck with real one
       set(state => ({
@@ -297,8 +298,21 @@ export const useStore = create((set, get) => ({
     const { decks } = get()
     const deck = decks.find(d => d.id === deckId)
     if (!deck) return
-    
+
     const updatedCards = deck.cards.filter(c => c.id !== cardId)
+    await get().updateDeck(deckId, { cards: updatedCards })
+  },
+
+  removeOneCardFromDeck: async (deckId, cardId) => {
+    const { decks } = get()
+    const deck = decks.find(d => d.id === deckId)
+    if (!deck) return
+
+    const idx = deck.cards.findIndex(c => c.id === cardId)
+    if (idx === -1) return
+
+    const updatedCards = [...deck.cards]
+    updatedCards.splice(idx, 1)
     await get().updateDeck(deckId, { cards: updatedCards })
   },
 

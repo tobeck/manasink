@@ -33,6 +33,71 @@ export const DEBOUNCE_MS = 300
 // Notifications
 export const NOTIFICATION_AUTO_DISMISS_MS = 4000
 
+// Deck building
+export const DECK_SIZE = 99 // cards excluding commander
+
+export const DEFAULT_CATEGORY_TARGETS = {
+  ramp: 10,
+  draw: 10,
+  removal: 10,
+  wipes: 3,
+  protection: 5,
+  interaction: 3,
+  creatures: 15,
+  lands: 36,
+}
+
+// Scryfall queries for category browsing (${CI} replaced with color identity at runtime)
+export const CATEGORY_SCRYFALL_QUERIES = {
+  ramp: {
+    query: 'otag:ramp id<=${CI} game:paper',
+    label: 'Ramp',
+  },
+  draw: {
+    query: 'function:draw id<=${CI} game:paper',
+    label: 'Card Draw',
+  },
+  removal: {
+    query: 'function:removal -function:board-wipe id<=${CI} game:paper',
+    label: 'Removal',
+  },
+  wipes: {
+    query: 'function:board-wipe id<=${CI} game:paper',
+    label: 'Board Wipes',
+  },
+  protection: {
+    query: '(kw:hexproof or kw:indestructible or o:"gains protection" or o:"gains hexproof" or o:"gains indestructible") id<=${CI} game:paper -t:land',
+    label: 'Protection',
+  },
+  interaction: {
+    query: 'otag:counterspell id<=${CI} game:paper',
+    label: 'Counterspells',
+  },
+  creatures: {
+    query: 't:creature id<=${CI} game:paper',
+    label: 'Creatures',
+  },
+  lands: {
+    query: 't:land -t:basic id<=${CI} game:paper',
+    label: 'Lands',
+  },
+}
+
+export const CATEGORY_BROWSER_PREFETCH_THRESHOLD = 10
+
+export const CATEGORY_META = {
+  ramp: { icon: '💎', label: 'Ramp', max: 20 },
+  draw: { icon: '📚', label: 'Card Draw', max: 20 },
+  removal: { icon: '🎯', label: 'Removal', max: 20 },
+  wipes: { icon: '💥', label: 'Board Wipes', max: 10 },
+  protection: { icon: '🛡️', label: 'Protection', max: 15 },
+  interaction: { icon: '🚫', label: 'Counterspells', max: 15 },
+  creatures: { icon: '⚔️', label: 'Creatures', max: 30 },
+  lands: { icon: '🏔️', label: 'Lands', max: 42 },
+}
+
+export const CATEGORY_ORDER = ['ramp', 'draw', 'removal', 'wipes', 'protection', 'interaction', 'creatures', 'lands']
+
 // URL validation whitelist for external links
 export const ALLOWED_DOMAINS = [
   'scryfall.com',

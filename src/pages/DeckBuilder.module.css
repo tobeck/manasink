@@ -42,7 +42,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
 .cardCount {
@@ -50,19 +49,128 @@
   color: var(--text-muted);
 }
 
+/* Overflow menu */
+.menuWrapper {
+  position: relative;
+  margin-left: auto;
+}
+
+.menuBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast);
+}
+
+.menuBtn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+.menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  min-width: 120px;
+  overflow: hidden;
+}
+
+.menuItem {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.menuItem:hover {
+  background: var(--bg-card);
+}
+
+/* Search */
 .search {
   padding: 0 16px 16px;
   flex-shrink: 0;
 }
 
-.stats {
-  display: flex;
-  justify-content: space-around;
-  padding: 12px 16px;
-  margin: 0 16px 16px;
+/* Sticky stats bar */
+.stickyStats {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-secondary);
+  padding: 0 16px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.stickyStatsToggle {
+  width: 100%;
+  border: none;
   background: var(--bg-card);
   border-radius: var(--radius-md);
-  flex-shrink: 0;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.stickyStatsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stickyStatChip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.chevronDown {
+  margin-left: auto;
+  transition: transform var(--transition-fast);
+  transform: rotate(0deg);
+  color: var(--text-muted);
+}
+
+.chevronUp {
+  margin-left: auto;
+  transition: transform var(--transition-fast);
+  transform: rotate(180deg);
+  color: var(--text-muted);
+}
+
+.stickyStatsExpanded {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0 4px;
 }
 
 .stat {
@@ -73,17 +181,42 @@
 }
 
 .statValue {
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 700;
 }
 
 .statLabel {
-  font-size: 0.625rem;
+  font-size: 0.5625rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
+/* Category toggle */
+.categoryToggle {
+  padding: 0 16px 8px;
+  flex-shrink: 0;
+}
+
+.categoryToggleBtn {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed var(--bg-elevated);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.categoryToggleBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Card list */
 .cardList {
   flex: 1;
   overflow-y: auto;
@@ -119,6 +252,19 @@
   border-radius: var(--radius-sm);
 }
 
+.quantityBadge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
 .cardName {
   flex: 1;
   font-size: 0.875rem;
@@ -134,29 +280,57 @@
   flex-shrink: 0;
 }
 
+/* Always-visible remove button */
 .removeBtn {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: none;
   border-radius: 50%;
   background: transparent;
   color: var(--text-muted);
   font-size: 0.75rem;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity var(--transition-fast), background var(--transition-fast);
   flex-shrink: 0;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.card:hover .removeBtn {
-  opacity: 1;
-}
-
-.removeBtn:hover {
+.removeBtn:hover,
+.removeBtn:active {
   background: var(--color-pass-bg);
   color: var(--color-pass);
 }
 
+/* Quantity controls for basic lands */
+.quantityControls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.quantityBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.quantityBtn:hover,
+.quantityBtn:active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Empty state */
 .emptyList {
   display: flex;
   flex-direction: column;
@@ -172,28 +346,13 @@
   margin-top: 4px;
 }
 
-.statsBtn {
-  padding: 4px 10px;
-  border: none;
-  border-radius: var(--radius-full);
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  transition: background var(--transition-fast);
-}
-
-.statsBtn:hover {
-  background: var(--accent);
-  color: #fff;
-}
-
 .statsSeparator {
   margin-top: 24px;
   padding-top: 24px;
   border-top: 1px solid var(--bg-elevated);
 }
 
+/* Import modal */
 .importBackdrop {
   position: fixed;
   inset: 0;

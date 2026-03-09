@@ -1,33 +1,48 @@
 import { useState } from 'react'
 import { useStore } from '../store'
+import { fetchStapleCards } from '../api'
+import { DEFAULT_CATEGORY_TARGETS } from '../constants'
 import styles from './BootstrapModal.module.css'
 
 export function BootstrapModal({ commander, onClose }) {
   const createDeck = useStore(s => s.createDeck)
+  const addNotification = useStore(s => s.addNotification)
   const [isCreating, setIsCreating] = useState(false)
   const [selectedOption, setSelectedOption] = useState('empty')
+  const [progress, setProgress] = useState('')
 
   const handleCreate = async () => {
     setIsCreating(true)
-    
+
     try {
-      await createDeck(commander, [])
+      if (selectedOption === 'staples') {
+        setProgress('Fetching staples...')
+        const { staples, lands } = await fetchStapleCards(commander.colorIdentity || [])
+        const allCards = [...staples, ...lands]
+        setProgress(`Adding ${allCards.length} cards...`)
+        await createDeck(commander, allCards, DEFAULT_CATEGORY_TARGETS)
+        addNotification('success', `Deck created with ${allCards.length} cards`)
+      } else {
+        await createDeck(commander, [], DEFAULT_CATEGORY_TARGETS)
+      }
       onClose()
     } catch (error) {
       console.error('Failed to create deck:', error)
+      addNotification('error', 'Failed to create deck')
       setIsCreating(false)
+      setProgress('')
     }
   }
 
   return (
     <>
-      <div className={styles.backdrop} onClick={onClose} />
+      <div className={styles.backdrop} onClick={!isCreating ? onClose : undefined} />
       <div className={styles.modal}>
         <div className={styles.handle} />
-        
+
         <div className={styles.commander}>
-          <img 
-            src={commander.image || commander.imageLarge} 
+          <img
+            src={commander.image || commander.imageLarge}
             alt={commander.name}
             className={styles.commanderImage}
           />
@@ -36,11 +51,12 @@ export function BootstrapModal({ commander, onClose }) {
             <p className={styles.commanderType}>{commander.typeLine}</p>
           </div>
         </div>
-        
+
         <div className={styles.options}>
           <button
             className={`${styles.option} ${selectedOption === 'empty' ? styles.selected : ''}`}
             onClick={() => setSelectedOption('empty')}
+            disabled={isCreating}
           >
             <span className={styles.optionIcon}>📝</span>
             <div className={styles.optionText}>
@@ -48,30 +64,30 @@ export function BootstrapModal({ commander, onClose }) {
               <span className={styles.optionDesc}>Start from scratch</span>
             </div>
           </button>
-          
+
           <button
             className={`${styles.option} ${selectedOption === 'staples' ? styles.selected : ''}`}
             onClick={() => setSelectedOption('staples')}
-            disabled
+            disabled={isCreating}
           >
             <span className={styles.optionIcon}>⚡</span>
             <div className={styles.optionText}>
               <span className={styles.optionTitle}>With staples</span>
-              <span className={styles.optionDesc}>Coming soon</span>
+              <span className={styles.optionDesc}>Auto-add ~40 staple cards + lands</span>
             </div>
           </button>
         </div>
-        
+
         <div className={styles.actions}>
-          <button className={styles.cancelBtn} onClick={onClose}>
+          <button className={styles.cancelBtn} onClick={onClose} disabled={isCreating}>
             Cancel
           </button>
-          <button 
-            className={styles.createBtn} 
+          <button
+            className={styles.createBtn}
             onClick={handleCreate}
             disabled={isCreating}
           >
-            {isCreating ? 'Creating...' : 'Create Deck'}
+            {isCreating ? (progress || 'Creating...') : 'Create Deck'}
           </button>
         </div>
       </div>

@@ -71,13 +71,14 @@ class LocalStorageAdapter {
     return getFromLocalStorage(STORAGE_KEYS.DECKS, [])
   }
 
-  async createDeck(commander, cards = []) {
+  async createDeck(commander, cards = [], categoryTargets = null) {
     const decks = getFromLocalStorage(STORAGE_KEYS.DECKS, [])
     const newDeck = {
       id: `deck-${Date.now()}`,
       name: `${commander.name} Deck`,
       commander,
       cards,
+      categoryTargets,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
@@ -205,24 +206,28 @@ class SupabaseAdapter {
       name: row.name,
       commander: row.commander_data,
       cards: row.cards,
+      categoryTargets: row.category_targets || null,
       createdAt: new Date(row.created_at).getTime(),
       updatedAt: new Date(row.updated_at).getTime(),
     }))
   }
 
-  async createDeck(commander, cards = []) {
+  async createDeck(commander, cards = [], categoryTargets = null) {
     const user = await this._ensureUser()
     if (!user) throw new Error('Not authenticated')
 
+    const insertData = {
+      user_id: user.id,
+      name: `${commander.name} Deck`,
+      commander_id: commander.id,
+      commander_data: commander,
+      cards,
+    }
+    if (categoryTargets) insertData.category_targets = categoryTargets
+
     const { data, error } = await supabase
       .from('decks')
-      .insert({
-        user_id: user.id,
-        name: `${commander.name} Deck`,
-        commander_id: commander.id,
-        commander_data: commander,
-        cards,
-      })
+      .insert(insertData)
       .select()
       .single()
 
@@ -241,6 +246,7 @@ class SupabaseAdapter {
       dbUpdates.commander_data = updates.commander
       dbUpdates.commander_id = updates.commander.id
     }
+    if (updates.categoryTargets !== undefined) dbUpdates.category_targets = updates.categoryTargets
 
     const { error } = await supabase
       .from('decks')
