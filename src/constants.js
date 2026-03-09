@@ -16,6 +16,7 @@ export const STORAGE_KEYS = {
   PREFERENCES: 'manasink:preferences',
   SWIPE_COUNT: 'manasink:swipeCount',
   SIGNIN_PROMPT_DISMISSED: 'manasink:signInPromptDismissed',
+  ONBOARDING_DISMISSED: 'manasink:onboardingDismissed',
 }
 
 // Queue and preloading

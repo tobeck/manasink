@@ -6,6 +6,7 @@ import { useCommanderQueue } from '../hooks/useCommanderQueue'
 import { SwipeCard, ErrorCard } from '../components/SwipeCard'
 import { FilterModal } from '../components/FilterModal'
 import { SignInPrompt } from '../components/SignInPrompt'
+import { OnboardingTooltip } from '../components/OnboardingTooltip'
 import {
   HINTS_DISMISS_AFTER,
   SIGNIN_PROMPT_AFTER,
@@ -21,6 +22,9 @@ export function SwipeView() {
     return saved ? parseInt(saved, 10) : 0
   })
   const [showSignInPrompt, setShowSignInPrompt] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem(STORAGE_KEYS.ONBOARDING_DISMISSED)
+  )
   const preloadedUrls = useRef(new Set())
 
   const { user } = useAuth()
@@ -162,6 +166,10 @@ export function SwipeView() {
         )}
       </div>
       
+      {showOnboarding && currentCommander && (
+        <OnboardingTooltip onDismiss={() => setShowOnboarding(false)} />
+      )}
+
       {lastPassedCommander && (
         <button
           className={styles.undoBtn}
