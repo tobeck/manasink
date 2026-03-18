@@ -1,7 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--bg-overlay);
   z-index: 200;
 }
 
@@ -10,30 +10,30 @@
   bottom: 0;
   left: 0;
   right: 0;
-  max-width: 500px;
+  max-width: var(--max-content-width);
   margin: 0 auto;
   background: var(--bg-secondary);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  padding: 12px 24px calc(24px + var(--safe-area-bottom));
+  padding: var(--space-3) var(--space-6) calc(var(--space-6) + var(--safe-area-bottom));
   z-index: 201;
 }
 
 .handle {
   width: 36px;
-  height: 4px;
+  height: var(--space-1);
   border-radius: 2px;
   background: var(--bg-elevated);
-  margin: 0 auto 20px;
+  margin: 0 auto var(--space-5);
 }
 
 .commander {
   display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .commanderImage {
-  width: 64px;
+  width: var(--space-16);
   height: 89px;
   object-fit: cover;
   border-radius: var(--radius-sm);
@@ -45,14 +45,14 @@
 }
 
 .commanderName {
-  font-size: 1.125rem;
-  font-weight: 700;
-  margin-bottom: 4px;
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-1);
   line-height: 1.3;
 }
 
 .commanderType {
-  font-size: 0.8125rem;
+  font-size: var(--text-base);
   color: var(--text-muted);
 }
 
@@ -60,14 +60,14 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
 
 .option {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 14px var(--space-4);
   border: 2px solid var(--bg-elevated);
   border-radius: var(--radius-md);
   background: transparent;
@@ -76,7 +76,7 @@
 }
 
 .option:not(:disabled):hover {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--border-subtle);
 }
 
 .option.selected {
@@ -89,7 +89,7 @@
 }
 
 .optionIcon {
-  font-size: 1.5rem;
+  font-size: var(--text-2xl);
 }
 
 .optionText {
@@ -99,19 +99,19 @@
 }
 
 .optionTitle {
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--text-md);
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
 }
 
 .optionDesc {
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
   color: var(--text-muted);
 }
 
 .actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .cancelBtn {
@@ -121,8 +121,8 @@
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
   color: var(--text-secondary);
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--text-md);
+  font-weight: var(--font-semibold);
 }
 
 .createBtn {
@@ -132,8 +132,8 @@
   border-radius: var(--radius-md);
   background: var(--accent);
   color: #fff;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--text-md);
+  font-weight: var(--font-semibold);
 }
 
 .createBtn:disabled {

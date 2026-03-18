@@ -169,14 +169,22 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`) deploys to Vercel:
 - Raw Scryfall card objects must pass through `transformCard()` before entering app state
 
 ### Styling
+- **See [STYLEGUIDE.md](./STYLEGUIDE.md)** for full design system documentation
 - CSS Modules with **camelCase** class names (`styles.cardImage`, not `styles['card-image']`)
+- **Typography:** Cabinet Grotesk (headings), General Sans (body) — loaded from Fontshare
 - Mobile-first breakpoints: `768px` (tablet), `1200px` (desktop)
 - Design token CSS variables in `src/styles/global.css`:
-  - Colors: `--bg-primary`, `--bg-secondary`, `--bg-card`, `--bg-elevated`, `--text-primary`, `--text-secondary`, `--text-muted`, `--accent`, `--color-like`, `--color-pass`
-  - Layout: `--header-height`, `--bottom-nav-height`, `--safe-area-bottom`
+  - Colors: `--bg-primary`, `--bg-secondary`, `--bg-card`, `--bg-elevated`, `--bg-hover`, `--bg-pressed`, `--bg-overlay`
+  - Text: `--text-primary`, `--text-secondary`, `--text-muted`, `--text-tertiary`
+  - Borders: `--border-subtle`, `--border-accent`
+  - Semantic: `--accent`, `--color-like`, `--color-pass`, `--color-info`
+  - MTG Mana: `--mana-white`, `--mana-blue`, `--mana-black`, `--mana-red`, `--mana-green`, `--mana-colorless`
+  - Typography: `--text-xs` through `--text-3xl`, `--font-normal` through `--font-heavy`
+  - Spacing: `--space-1` (4px) through `--space-16` (64px) on a 4px base grid
+  - Layout: `--header-height`, `--bottom-nav-height`, `--safe-area-bottom`, `--max-content-width`
   - Radii: `--radius-sm` through `--radius-full`
   - Shadows: `--shadow-sm`, `--shadow-md`, `--shadow-lg`
-  - Transitions: `--transition-fast`, `--transition-normal`, `--transition-spring`
+  - Transitions: `--transition-fast`, `--transition-normal`, `--transition-slow`, `--transition-bounce`
 
 ## Patterns for New Code
 
@@ -259,7 +267,7 @@ These are the most common mistakes — check your work against this list:
 7. **Assuming user is logged in** — `getCurrentUser()` is async and can return `null` even when Supabase is configured
 8. **Default exports** — Everything uses named exports except `App.jsx`
 9. **Forgetting barrel re-export** — New components/hooks must be added to their `index.js` barrel
-10. **Hardcoding values** — Colors, sizes, thresholds, URLs all belong in `constants.js` or CSS variables
+10. **Hardcoding values** — Colors, sizes, thresholds, URLs all belong in `constants.js` or CSS variables. Use `var(--text-base)` not `0.875rem`, `var(--space-4)` not `16px`, `var(--font-semibold)` not `600`
 11. **CSS kebab-case** — Use `styles.cardImage` not `styles['card-image']`
 12. **Calling `initialize()` directly** — It has a reinit guard; `reset()` must be called first to clear state
 13. **StrictMode double-invocation** — Effects run twice in dev; side effects must be idempotent or use cleanup

@@ -1,20 +1,20 @@
 .container {
   display: flex;
   justify-content: center;
-  gap: 48px;
-  padding: 16px 0 8px;
+  gap: var(--space-12);
+  padding: var(--space-4) 0 var(--space-2);
   flex-shrink: 0;
 }
 
 .button {
-  width: 64px;
-  height: 64px;
+  width: var(--space-16);
+  height: var(--space-16);
   border-radius: 50%;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform var(--transition-spring), box-shadow var(--transition-fast);
+  transition: transform var(--transition-bounce), box-shadow var(--transition-fast);
 }
 
 .button:disabled {

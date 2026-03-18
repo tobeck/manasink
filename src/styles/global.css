@@ -5,46 +5,98 @@
 }
 
 :root {
-  /* Cleaner, darker palette */
+  /* Colors — Surfaces */
   --bg-primary: #0a0a0b;
   --bg-secondary: #111113;
   --bg-card: #18181b;
   --bg-elevated: #1f1f23;
-  
+  --bg-hover: rgba(255, 255, 255, 0.04);
+  --bg-pressed: rgba(255, 255, 255, 0.08);
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+
+  /* Colors — Text */
   --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-muted: #52525b;
-  
-  /* Accent - use sparingly */
+  --text-tertiary: #3f3f46;
+
+  /* Colors — Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-accent: rgba(244, 63, 94, 0.3);
+
+  /* Colors — Accent (use sparingly) */
   --accent: #f43f5e;
   --accent-soft: rgba(244, 63, 94, 0.15);
-  
-  /* Semantic */
+
+  /* Colors — Semantic */
   --color-like: #22c55e;
   --color-like-bg: rgba(34, 197, 94, 0.2);
   --color-pass: #ef4444;
   --color-pass-bg: rgba(239, 68, 68, 0.2);
-  
+  --color-info: #3b82f6;
+  --color-info-bg: rgba(59, 130, 246, 0.2);
+
+  /* Colors — MTG Mana */
+  --mana-white: #F9FAF4;
+  --mana-blue: #0E68AB;
+  --mana-black: #150B00;
+  --mana-red: #D3202A;
+  --mana-green: #00733E;
+  --mana-colorless: #CBC2BF;
+
+  /* Typography — Scale */
+  --text-xs: 0.625rem;
+  --text-sm: 0.75rem;
+  --text-base: 0.875rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.75rem;
+
+  /* Typography — Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-heavy: 800;
+
   /* Layout */
   --header-height: 56px;
   --bottom-nav-height: 64px;
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  
-  /* Spacing */
+  --max-content-width: 500px;
+
+  /* Spacing — 4px base */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radii */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-full: 9999px;
-  
+
   /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  
+
   /* Transitions */
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s ease;
+  --transition-slow: 0.5s ease;
+  --transition-bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Keep legacy alias */
   --transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -52,12 +104,16 @@ html, body, #root {
   height: 100%;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'General Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Cabinet Grotesk', 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 a {

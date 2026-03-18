@@ -6,19 +6,19 @@
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-width: calc(100vw - 2rem);
+  gap: var(--space-2);
+  max-width: calc(100vw - var(--space-8));
   width: 360px;
 }
 
 .toast {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: #2a2a3e;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
   animation: slideIn 0.3s ease-out;
 }
 
@@ -35,54 +35,54 @@
 
 .icon {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: var(--space-6);
+  height: var(--space-6);
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 0.75rem;
-  font-weight: bold;
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
 }
 
 .error .icon {
-  background: #ef444433;
-  color: #ef4444;
+  background: var(--color-pass-bg);
+  color: var(--color-pass);
 }
 
 .success .icon {
-  background: #22c55e33;
-  color: #22c55e;
+  background: var(--color-like-bg);
+  color: var(--color-like);
 }
 
 .info .icon {
-  background: #3b82f633;
-  color: #3b82f6;
+  background: var(--color-info-bg);
+  color: var(--color-info);
 }
 
 .message {
   flex: 1;
-  font-size: 0.875rem;
-  color: #eee;
+  font-size: var(--text-base);
+  color: var(--text-primary);
 }
 
 .close {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: var(--space-6);
+  height: var(--space-6);
   display: flex;
   align-items: center;
   justify-content: center;
   background: none;
   border: none;
-  color: #888;
+  color: var(--text-muted);
   cursor: pointer;
-  font-size: 0.75rem;
-  border-radius: 4px;
-  transition: background-color 0.15s;
+  font-size: var(--text-sm);
+  border-radius: var(--space-1);
+  transition: background-color var(--transition-fast);
 }
 
 .close:hover {
-  background: #ffffff15;
-  color: #eee;
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }

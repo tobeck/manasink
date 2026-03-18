@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-width: 500px;
+  max-width: var(--max-content-width);
   margin: 0 auto;
   background: var(--bg-primary);
 }
@@ -34,8 +34,8 @@
 }
 
 .spinner {
-  width: 32px;
-  height: 32px;
+  width: var(--space-8);
+  height: var(--space-8);
   border: 3px solid var(--bg-elevated);
   border-top-color: var(--accent);
   border-radius: 50%;

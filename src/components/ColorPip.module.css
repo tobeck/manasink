@@ -20,6 +20,6 @@
 }
 
 .large {
-  width: 24px;
-  height: 24px;
+  width: var(--space-6);
+  height: var(--space-6);
 }

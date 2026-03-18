@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: space-between;
   height: var(--header-height);
-  padding: 0 20px;
+  padding: 0 var(--space-5);
   background: var(--bg-primary);
   flex-shrink: 0;
 }
@@ -11,7 +11,7 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .logoIcon {
@@ -25,8 +25,9 @@
 }
 
 .logoText {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
   letter-spacing: -0.02em;
   color: var(--text-primary);
 }
@@ -55,17 +56,17 @@
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .aboutLink {
   border: none;
   background: transparent;
   color: var(--text-tertiary);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
   cursor: pointer;
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   transition: color var(--transition-fast);
 }
@@ -77,15 +78,15 @@
 .backBtn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 12px 8px 8px;
-  margin-left: -8px;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-primary);
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: var(--text-md);
+  font-weight: var(--font-medium);
   transition: background var(--transition-fast);
 }
 

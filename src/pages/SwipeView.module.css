@@ -2,14 +2,14 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   position: relative;
 }
 
 /* Desktop: center swipe area with max width */
 @media (min-width: 768px) {
   .container {
-    max-width: 500px;
+    max-width: var(--max-content-width);
     margin: 0 auto;
   }
 }
@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 0;
+  padding: var(--space-2) 0;
 }
 
 /* Swipe hints */
@@ -29,7 +29,7 @@
   transform: translateY(-50%);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   color: var(--text-muted);
   opacity: 0.3;
   pointer-events: none;
@@ -42,24 +42,24 @@
 }
 
 .hintLeft {
-  left: 4px;
+  left: var(--space-1);
   flex-direction: column;
 }
 
 .hintRight {
-  right: 4px;
+  right: var(--space-1);
   flex-direction: column;
 }
 
 .hintArrow {
-  font-size: 1.5rem;
+  font-size: var(--text-2xl);
   font-weight: 300;
   line-height: 1;
 }
 
 .hintLabel {
-  font-size: 0.625rem;
-  font-weight: 500;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -67,18 +67,18 @@
 /* Undo button */
 .undoBtn {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
+  bottom: var(--space-4);
+  left: var(--space-4);
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: var(--space-2) 14px;
   border: none;
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
   color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
   cursor: pointer;
   box-shadow: var(--shadow-md);
   transition: transform var(--transition-fast), opacity var(--transition-fast);
