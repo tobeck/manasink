@@ -151,6 +151,7 @@ export const useStore = create((set, get) => ({
       })
     } catch (error) {
       console.error('Failed to record pass:', error)
+      get().addNotification('error', 'Failed to record swipe')
     }
   },
 
@@ -167,73 +168,86 @@ export const useStore = create((set, get) => ({
   preferences: { ...DEFAULT_PREFERENCES },
   
   setColorFilters: async (colorFilters) => {
-    const preferences = { ...get().preferences, colorFilters }
+    const old = get().preferences
+    const preferences = { ...old, colorFilters }
     set({ preferences })
-    
+
     try {
       await savePreferences(preferences)
     } catch (error) {
       console.error('Failed to save preferences:', error)
+      set({ preferences: old })
+      get().addNotification('error', 'Failed to save filter preferences')
     }
   },
   
   toggleColorFilter: async (color) => {
-    const { preferences } = get()
-    const colorFilters = preferences.colorFilters.includes(color)
-      ? preferences.colorFilters.filter(c => c !== color)
-      : [...preferences.colorFilters, color]
-    
-    const updated = { ...preferences, colorFilters }
+    const old = get().preferences
+    const colorFilters = old.colorFilters.includes(color)
+      ? old.colorFilters.filter(c => c !== color)
+      : [...old.colorFilters, color]
+
+    const updated = { ...old, colorFilters }
     set({ preferences: updated })
-    
+
     try {
       await savePreferences(updated)
     } catch (error) {
       console.error('Failed to save preferences:', error)
+      set({ preferences: old })
+      get().addNotification('error', 'Failed to save filter preferences')
     }
   },
 
   setCmcRange: async (cmcRange) => {
-    const updated = { ...get().preferences, cmcRange }
+    const old = get().preferences
+    const updated = { ...old, cmcRange }
     set({ preferences: updated })
     try {
       await savePreferences(updated)
     } catch (error) {
       console.error('Failed to save preferences:', error)
+      set({ preferences: old })
+      get().addNotification('error', 'Failed to save filter preferences')
     }
   },
 
   toggleKeyword: async (keyword) => {
-    const { preferences } = get()
-    const keywords = preferences.keywords.includes(keyword)
-      ? preferences.keywords.filter(k => k !== keyword)
-      : [...preferences.keywords, keyword]
-    const updated = { ...preferences, keywords }
+    const old = get().preferences
+    const keywords = old.keywords.includes(keyword)
+      ? old.keywords.filter(k => k !== keyword)
+      : [...old.keywords, keyword]
+    const updated = { ...old, keywords }
     set({ preferences: updated })
     try {
       await savePreferences(updated)
     } catch (error) {
       console.error('Failed to save preferences:', error)
+      set({ preferences: old })
+      get().addNotification('error', 'Failed to save filter preferences')
     }
   },
 
   toggleTypeFilter: async (type) => {
-    const { preferences } = get()
-    const typeFilters = preferences.typeFilters.includes(type)
-      ? preferences.typeFilters.filter(t => t !== type)
-      : [...preferences.typeFilters, type]
-    const updated = { ...preferences, typeFilters }
+    const old = get().preferences
+    const typeFilters = old.typeFilters.includes(type)
+      ? old.typeFilters.filter(t => t !== type)
+      : [...old.typeFilters, type]
+    const updated = { ...old, typeFilters }
     set({ preferences: updated })
     try {
       await savePreferences(updated)
     } catch (error) {
       console.error('Failed to save preferences:', error)
+      set({ preferences: old })
+      get().addNotification('error', 'Failed to save filter preferences')
     }
   },
 
   clearAdvancedFilters: async () => {
+    const old = get().preferences
     const updated = {
-      ...get().preferences,
+      ...old,
       cmcRange: [CMC_MIN, CMC_MAX],
       keywords: [],
       typeFilters: [],
@@ -243,6 +257,8 @@ export const useStore = create((set, get) => ({
       await savePreferences(updated)
     } catch (error) {
       console.error('Failed to save preferences:', error)
+      set({ preferences: old })
+      get().addNotification('error', 'Failed to save filter preferences')
     }
   },
 

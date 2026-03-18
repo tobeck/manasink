@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useStore } from '../store'
 import { useShallow } from 'zustand/react/shallow'
 import styles from './Toast.module.css'
@@ -16,14 +16,17 @@ export function Toast() {
         <ToastItem
           key={notification.id}
           notification={notification}
-          onDismiss={() => dismissNotification(notification.id)}
+          id={notification.id}
+          dismissNotification={dismissNotification}
         />
       ))}
     </div>
   )
 }
 
-function ToastItem({ notification, onDismiss }) {
+function ToastItem({ notification, id, dismissNotification }) {
+  const onDismiss = useCallback(() => dismissNotification(id), [dismissNotification, id])
+
   useEffect(() => {
     const timer = setTimeout(onDismiss, 4000)
     return () => clearTimeout(timer)
