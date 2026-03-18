@@ -48,21 +48,16 @@ export function AdminPage() {
 
     async function fetchStats() {
       try {
-        // Fetch admin stats
+        // Fetch admin stats (RPC function — admin-only)
         const { data: adminStats, error: statsError } = await supabase
-          .from('admin_stats')
-          .select('*')
-          .single()
-        
+          .rpc('get_admin_stats')
+
         if (statsError) throw statsError
         setStats(adminStats)
 
-        // Fetch user stats
+        // Fetch user stats (RPC function — admin-only)
         const { data: users, error: usersError } = await supabase
-          .from('user_stats')
-          .select('*')
-          .order('total_swipes', { ascending: false })
-          .limit(20)
+          .rpc('get_user_stats', { result_limit: 20 })
 
         if (!usersError) setUserStats(users || [])
 
