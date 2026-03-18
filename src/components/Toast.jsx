@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import styles from './Toast.module.css'
 
 export function Toast() {
-  const notifications = useStore(s => s.notifications)
-  const dismissNotification = useStore(s => s.dismissNotification)
+  const { notifications, dismissNotification } = useStore(
+    useShallow(s => ({ notifications: s.notifications, dismissNotification: s.dismissNotification }))
+  )
 
   if (notifications.length === 0) return null
 

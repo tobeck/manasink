@@ -1,11 +1,13 @@
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '../context/AuthContext'
 import { UserMenu } from './UserMenu'
 import styles from './Header.module.css'
 
 export function Header() {
-  const view = useStore(s => s.view)
-  const setView = useStore(s => s.setView)
+  const { view, setView } = useStore(
+    useShallow(s => ({ view: s.view, setView: s.setView }))
+  )
   const { isAuthenticated } = useAuth()
 
   // Show back button in deck builder or admin

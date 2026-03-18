@@ -1,12 +1,11 @@
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import styles from './BottomNav.module.css'
 
 export function BottomNav() {
-  const view = useStore(s => s.view)
-  const setView = useStore(s => s.setView)
-  const setFilterModalOpen = useStore(s => s.setFilterModalOpen)
-  const likedCommanders = useStore(s => s.likedCommanders)
-  const decks = useStore(s => s.decks)
+  const { view, setView, setFilterModalOpen, likedCommanders, decks } = useStore(
+    useShallow(s => ({ view: s.view, setView: s.setView, setFilterModalOpen: s.setFilterModalOpen, likedCommanders: s.likedCommanders, decks: s.decks }))
+  )
 
   return (
     <nav className={styles.nav}>

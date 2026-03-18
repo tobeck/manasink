@@ -1,11 +1,12 @@
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import { ColorIdentity } from '../components/ColorPip'
 import styles from './DecksView.module.css'
 
 export function DecksView() {
-  const decks = useStore(s => s.decks)
-  const setActiveDeck = useStore(s => s.setActiveDeck)
-  const deleteDeck = useStore(s => s.deleteDeck)
+  const { decks, setActiveDeck, deleteDeck } = useStore(
+    useShallow(s => ({ decks: s.decks, setActiveDeck: s.setActiveDeck, deleteDeck: s.deleteDeck }))
+  )
 
   if (decks.length === 0) {
     return (

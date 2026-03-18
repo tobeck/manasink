@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import { fetchStapleCards } from '../api'
 import { DEFAULT_CATEGORY_TARGETS } from '../constants'
 import styles from './BootstrapModal.module.css'
 
 export function BootstrapModal({ commander, onClose }) {
-  const createDeck = useStore(s => s.createDeck)
-  const addNotification = useStore(s => s.addNotification)
+  const { createDeck, addNotification } = useStore(
+    useShallow(s => ({ createDeck: s.createDeck, addNotification: s.addNotification }))
+  )
   const [isCreating, setIsCreating] = useState(false)
   const [selectedOption, setSelectedOption] = useState('empty')
   const [progress, setProgress] = useState('')

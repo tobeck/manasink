@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { useStore } from './store'
+import { useShallow } from 'zustand/react/shallow'
 import { Header } from './components/Header'
 import { BottomNav } from './components/BottomNav'
 import { SwipeView } from './pages/SwipeView'
@@ -14,10 +15,9 @@ import { Toast } from './components/Toast'
 import styles from './App.module.css'
 
 function AppContent() {
-  const view = useStore(s => s.view)
-  const isLoading = useStore(s => s.isLoading)
-  const initialize = useStore(s => s.initialize)
-  const reset = useStore(s => s.reset)
+  const { view, isLoading, initialize, reset } = useStore(
+    useShallow(s => ({ view: s.view, isLoading: s.isLoading, initialize: s.initialize, reset: s.reset }))
+  )
   const { user, loading: authLoading } = useAuth()
   
   useEffect(() => {
