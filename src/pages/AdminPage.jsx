@@ -12,6 +12,7 @@ export function AdminPage() {
   const [dailyStats, setDailyStats] = useState([])
   const [popularCommanders, setPopularCommanders] = useState([])
   const [buyStats, setBuyStats] = useState(null)
+  const [engagement, setEngagement] = useState(null)
   const [error, setError] = useState(null)
 
   // Check if user is admin
@@ -61,14 +62,17 @@ export function AdminPage() {
 
         if (!usersError) setUserStats(users || [])
 
-        // Fetch daily stats
+        // Fetch daily stats via RPC (replaces broken view query)
         const { data: daily, error: dailyError } = await supabase
-          .from('daily_stats')
-          .select('*')
-          .order('date', { ascending: false })
-          .limit(14)
+          .rpc('get_daily_stats', { day_count: 14 })
 
         if (!dailyError) setDailyStats(daily || [])
+
+        // Fetch engagement stats
+        const { data: eng, error: engError } = await supabase
+          .rpc('get_engagement_stats')
+
+        if (!engError) setEngagement(eng)
 
         // Fetch popular commanders
         const { data: commanders, error: cmdError } = await supabase
@@ -150,6 +154,17 @@ export function AdminPage() {
     )
   }
 
+  // Compute deltas from engagement stats
+  const deltas = engagement ? {
+    swipes: computeDelta(engagement.curr_week_swipes, engagement.prev_week_swipes),
+    likes: computeDelta(engagement.curr_week_likes, engagement.prev_week_likes),
+    active: computeDelta(engagement.curr_week_active, engagement.prev_week_active),
+    newUsers: computeDelta(engagement.curr_week_new_users, engagement.prev_week_new_users),
+  } : null
+
+  // Reverse dailyStats for charts (oldest first)
+  const chartData = [...dailyStats].reverse()
+
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Admin Dashboard</h1>
@@ -158,14 +173,105 @@ export function AdminPage() {
       {stats && (
         <div className={styles.statsGrid}>
           <StatCard label="Total Users" value={stats.total_users} />
-          <StatCard label="Active (7d)" value={stats.active_users_7d} />
-          <StatCard label="New (7d)" value={stats.new_users_7d} />
-          <StatCard label="Total Swipes" value={stats.total_swipes?.toLocaleString()} />
-          <StatCard label="Total Likes" value={stats.total_likes?.toLocaleString()} />
+          <StatCard label="Active (7d)" value={stats.active_users_7d} delta={deltas?.active} />
+          <StatCard label="New (7d)" value={stats.new_users_7d} delta={deltas?.newUsers} />
+          <StatCard label="Total Swipes" value={stats.total_swipes?.toLocaleString()} delta={deltas?.swipes} />
+          <StatCard label="Total Likes" value={stats.total_likes?.toLocaleString()} delta={deltas?.likes} />
           <StatCard label="Like Rate" value={`${stats.overall_like_rate || 0}%`} />
           <StatCard label="Total Decks" value={stats.total_decks} />
           <StatCard label="Active (30d)" value={stats.active_users_30d} />
         </div>
+      )}
+
+      {/* Trend Charts */}
+      {chartData.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Trends (Last 14 days)</h2>
+          <div className={styles.chartsGrid}>
+            <TrendChart
+              title="Active Users"
+              data={chartData}
+              valueKey="active_users"
+              color="var(--accent)"
+            />
+            <TrendChart
+              title="Swipes"
+              data={chartData}
+              valueKey="total_swipes"
+              color="var(--text-secondary)"
+            />
+            <TrendChart
+              title="Like Rate"
+              data={chartData}
+              valueKey="like_rate_pct"
+              color="var(--color-like)"
+              suffix="%"
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Engagement Metrics */}
+      {engagement && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Engagement</h2>
+          <div className={styles.statsGrid}>
+            <StatCard
+              label="DAU/WAU"
+              value={engagement.wau > 0
+                ? `${Math.round((engagement.dau / engagement.wau) * 100)}%`
+                : '0%'}
+            />
+            <StatCard
+              label="Avg Swipes/User"
+              value={engagement.avg_swipes_per_user_7d}
+            />
+            <StatCard label="New Active" value={engagement.new_users_active_7d} />
+            <StatCard label="Returning" value={engagement.returning_users_7d} />
+            <StatCard label="Deeply Engaged" value={engagement.deeply_engaged_30d} />
+          </div>
+          {(engagement.new_users_active_7d > 0 || engagement.returning_users_7d > 0) && (
+            <div className={styles.ratioBarSection}>
+              <div className={styles.ratioLabel}>
+                <span>New ({engagement.new_users_active_7d})</span>
+                <span>Returning ({engagement.returning_users_7d})</span>
+              </div>
+              <RatioBar
+                left={engagement.new_users_active_7d}
+                right={engagement.returning_users_7d}
+              />
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Week-over-Week Comparison */}
+      {engagement && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Week over Week</h2>
+          <div className={styles.statsGrid}>
+            <ComparisonCard
+              label="Swipes"
+              current={engagement.curr_week_swipes}
+              previous={engagement.prev_week_swipes}
+            />
+            <ComparisonCard
+              label="Likes"
+              current={engagement.curr_week_likes}
+              previous={engagement.prev_week_likes}
+            />
+            <ComparisonCard
+              label="Active Users"
+              current={engagement.curr_week_active}
+              previous={engagement.prev_week_active}
+            />
+            <ComparisonCard
+              label="New Users"
+              current={engagement.curr_week_new_users}
+              previous={engagement.prev_week_new_users}
+            />
+          </div>
+        </section>
       )}
 
       {/* Buy Stats */}
@@ -175,12 +281,12 @@ export function AdminPage() {
           <div className={styles.statsGrid}>
             <StatCard label="Buy Expands" value={buyStats.expands} />
             <StatCard label="Buy Clicks" value={buyStats.clicks} />
-            <StatCard 
-              label="Click Rate" 
-              value={buyStats.expands > 0 
-                ? `${Math.round(buyStats.clicks / buyStats.expands * 100)}%` 
+            <StatCard
+              label="Click Rate"
+              value={buyStats.expands > 0
+                ? `${Math.round(buyStats.clicks / buyStats.expands * 100)}%`
                 : '0%'
-              } 
+              }
             />
           </div>
           {Object.keys(buyStats.byStore).length > 0 && (
@@ -197,7 +303,7 @@ export function AdminPage() {
         </section>
       )}
 
-      {/* Daily Stats */}
+      {/* Daily Stats Table */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Daily Activity (Last 14 days)</h2>
         <div className={styles.tableWrapper}>
@@ -296,11 +402,80 @@ export function AdminPage() {
   )
 }
 
-function StatCard({ label, value }) {
+function computeDelta(current, previous) {
+  if (!previous || previous === 0) return current > 0 ? 100 : 0
+  return Math.round(((current - previous) / previous) * 100)
+}
+
+function StatCard({ label, value, delta }) {
   return (
     <div className={styles.statCard}>
       <div className={styles.statValue}>{value}</div>
       <div className={styles.statLabel}>{label}</div>
+      {delta != null && delta !== undefined && (
+        <div className={`${styles.delta} ${delta > 0 ? styles.deltaUp : delta < 0 ? styles.deltaDown : styles.deltaNeutral}`}>
+          {delta > 0 ? '\u25B2' : delta < 0 ? '\u25BC' : '\u2014'}{' '}
+          {Math.abs(delta)}%
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TrendChart({ title, data, valueKey, color, suffix = '' }) {
+  const values = data.map(d => d[valueKey] || 0)
+  const max = Math.max(...values, 1)
+
+  return (
+    <div className={styles.chartCard}>
+      <div className={styles.chartTitle}>{title}</div>
+      <div className={styles.chart}>
+        {data.map((d, i) => {
+          const val = d[valueKey] || 0
+          const heightPct = (val / max) * 100
+          const dateStr = new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+          return (
+            <div key={d.date} className={styles.chartBar}>
+              <div
+                className={styles.chartFill}
+                style={{ height: `${heightPct}%`, background: color }}
+              >
+                {val > 0 && <span className={styles.chartBarValue}>{val}{suffix}</span>}
+              </div>
+              {i % 2 === 0 && <span className={styles.chartDateLabel}>{dateStr}</span>}
+              {i % 2 !== 0 && <span className={styles.chartDateLabel}>&nbsp;</span>}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function RatioBar({ left, right }) {
+  const total = left + right
+  const leftPct = total > 0 ? (left / total) * 100 : 50
+
+  return (
+    <div className={styles.ratioBar}>
+      <div className={styles.ratioLeft} style={{ width: `${leftPct}%` }} />
+      <div className={styles.ratioRight} style={{ width: `${100 - leftPct}%` }} />
+    </div>
+  )
+}
+
+function ComparisonCard({ label, current, previous }) {
+  const delta = computeDelta(current, previous)
+
+  return (
+    <div className={styles.statCard}>
+      <div className={styles.statValue}>{(current || 0).toLocaleString()}</div>
+      <div className={styles.statLabel}>{label}</div>
+      <div className={styles.comparisonPrev}>vs {(previous || 0).toLocaleString()}</div>
+      <div className={`${styles.delta} ${delta > 0 ? styles.deltaUp : delta < 0 ? styles.deltaDown : styles.deltaNeutral}`}>
+        {delta > 0 ? '\u25B2' : delta < 0 ? '\u25BC' : '\u2014'}{' '}
+        {Math.abs(delta)}%
+      </div>
     </div>
   )
 }

@@ -62,6 +62,32 @@
   letter-spacing: 0.5px;
 }
 
+/* Delta indicators */
+.delta {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.deltaUp {
+  color: #34d399;
+}
+
+.deltaDown {
+  color: #f87171;
+}
+
+.deltaNeutral {
+  color: var(--text-muted);
+}
+
+/* Comparison card previous value */
+.comparisonPrev {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
 .section {
   margin-bottom: 32px;
 }
@@ -73,6 +99,113 @@
   color: var(--text-secondary);
 }
 
+/* Trend Charts */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .chartsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.chartCard {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.chartTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 120px;
+}
+
+.chartBar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+}
+
+.chartFill {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  transition: height 0.3s ease;
+  margin-top: auto;
+}
+
+.chartBarValue {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: #fff;
+  padding-top: 2px;
+  white-space: nowrap;
+}
+
+.chartDateLabel {
+  font-size: 0.5rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Ratio Bar (new vs returning) */
+.ratioBarSection {
+  margin-top: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.ratioLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.ratioBar {
+  display: flex;
+  height: 12px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.ratioLeft {
+  background: var(--accent);
+  min-width: 2px;
+}
+
+.ratioRight {
+  background: var(--text-muted);
+  min-width: 2px;
+}
+
+/* Tables */
 .tableWrapper {
   overflow-x: auto;
   background: var(--bg-card);
