@@ -140,6 +140,7 @@ GitHub Actions workflow (`.github/workflows/deploy.yml`) deploys to Vercel:
 - Every user-scoped table needs RLS policies (SELECT/INSERT/UPDATE/DELETE scoped to `auth.uid() = user_id`)
 - Tables with `updated_at` need the `handle_updated_at()` trigger
 - All FKs to `auth.users(id)` use `ON DELETE CASCADE`
+- **Risky migrations** (dropping tables/columns, altering column types, bulk UPDATE/DELETE): do a `pg_dump` backup via Supabase dashboard before deploying. Additive-only migrations (CREATE, ADD COLUMN) don't need this — daily automatic backups cover them
 
 ## Coding Conventions
 
